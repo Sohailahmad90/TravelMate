@@ -2,11 +2,9 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Check,
-  CreditCard,
   MapPin,
   MessageSquare,
   Search,
-  ShieldCheck,
   Star,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -22,14 +20,13 @@ import { ResilientImage } from '../components/ResilientImage';
 interface HotelsPageProps {
   initialQuery?: string;
   initialSelectedId?: string;
-  onOpenPaymentModal: () => void;
+  onOpenPaymentModal?: () => void;
   onNavigate: (page: ActivePage) => void;
 }
 
 export function HotelsPage({
   initialQuery = '',
   initialSelectedId,
-  onOpenPaymentModal,
   onNavigate,
 }: HotelsPageProps) {
   const { firebaseUser, effectiveRole, setDashboardTargetTab, openAuthModal } = useAuth();
@@ -37,14 +34,14 @@ export function HotelsPage({
 
   const [query, setQuery] = useState(initialQuery);
   const [roomFilter, setRoomFilter] = useState('All');
-  const [maxPrice, setMaxPrice] = useState(50000);
+  const [maxPrice, setMaxPrice] = useState(20000);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
 
-  // Booking form state
-  const [checkIn, setCheckIn] = useState('2026-06-22');
-  const [checkOut, setCheckOut] = useState('2026-06-25');
-  const [guests, setGuests] = useState(2);
-  const [selectedRoomType, setSelectedRoomType] = useState('Deluxe');
+  // Compact booking form state (no pre-filled values)
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [bookingMsg, setBookingMsg] = useState<string | null>(null);
@@ -88,6 +85,16 @@ export function HotelsPage({
       return;
     }
 
+    const numGuests = Number(guests);
+    if (!checkIn || !checkOut) {
+      setBookingErr('Please select check-in and check-out dates.');
+      return;
+    }
+    if (!numGuests || numGuests < 1) {
+      setBookingErr('Please enter the number of guests.');
+      return;
+    }
+
     const roomObj =
       (selected.rooms || []).find((r) => r.roomType === selectedRoomType) ||
       selected.rooms?.[0];
@@ -108,14 +115,17 @@ export function HotelsPage({
         startDate: checkIn,
         endDate: checkOut,
         daysCount: nights,
-        guestsCount: guests,
-        roomType: roomObj?.roomType || selectedRoomType,
+        guestsCount: numGuests,
+        roomType: roomObj?.roomType || selectedRoomType || 'Standard',
         estimatedTotalPkr: nightlyRate * nights,
-        notes,
+        notes: notes.trim(),
       });
       setBookingMsg(
-        `Reservation request for ${nights} night(s) in ${roomObj?.roomType || selectedRoomType} room submitted!`
+        `Reservation request for ${nights} night(s) submitted!`
       );
+      setCheckIn('');
+      setCheckOut('');
+      setGuests('');
       setNotes('');
     } catch (err) {
       setBookingErr(err instanceof Error ? err.message : 'Unable to submit hotel reservation.');
@@ -151,16 +161,22 @@ export function HotelsPage({
   };
 
   const inputClass =
-    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
+    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
 
   if (selected) {
-    const nights = calculateDaysBetween(checkIn, checkOut);
+    const hasDates = Boolean(checkIn && checkOut);
+    const nights = hasDates ? calculateDaysBetween(checkIn, checkOut) : 0;
     const rooms = selected.rooms || [
-      { roomType: 'Deluxe' as const, pricePerNightPkr: selected.startingPricePkr, totalRooms: 5, maxGuests: 2 },
+      {
+        roomType: 'Deluxe' as const,
+        pricePerNightPkr: selected.startingPricePkr,
+        totalRooms: 5,
+        maxGuests: 2,
+      },
     ];
     const activeRoom =
       rooms.find((r) => r.roomType === selectedRoomType) || rooms[0];
-    const estimatedTotal = activeRoom.pricePerNightPkr * nights;
+    const estimatedTotal = nights > 0 ? activeRoom.pricePerNightPkr * nights : 0;
     const hotelReviews = reviews.filter(
       (r) => r.targetType === 'hotel' && r.targetId === selected.id
     );
@@ -267,7 +283,7 @@ export function HotelsPage({
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
-                          Max {rm.maxGuests} guests · {rm.totalRooms} rooms in property
+                          Max {rm.maxGuests} guests · {rm.totalRooms} rooms available
                         </p>
                       </button>
                     );
@@ -299,20 +315,20 @@ export function HotelsPage({
             </div>
           </div>
 
-          {/* Hotel Reservation Form + Direct Owner Message */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Compact Hotel Reservation Card + Quick Message */}
+          <div className="lg:col-span-4 space-y-5">
             <form
               onSubmit={handleBookHotel}
-              className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-5"
+              className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 space-y-4"
             >
-              <div className="border-b border-slate-100 pb-4">
-                <span className="text-xs text-slate-500 block">
-                  Selected: {activeRoom.roomType} Room
-                </span>
-                <span className="text-2xl font-extrabold font-mono-num text-[#0B5ED7]">
-                  {formatPkr(activeRoom.pricePerNightPkr)}
-                  <span className="text-xs text-slate-500 font-normal"> / night</span>
-                </span>
+              <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <span className="text-xs text-slate-500 block">{activeRoom.roomType} Room</span>
+                  <span className="text-xl font-extrabold font-mono-num text-[#0B5ED7]">
+                    {formatPkr(activeRoom.pricePerNightPkr)}
+                    <span className="text-xs text-slate-500 font-normal"> / night</span>
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -357,10 +373,12 @@ export function HotelsPage({
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Guests</label>
                   <input
                     type="number"
+                    required
                     min={1}
                     max={12}
                     value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
+                    onChange={(e) => setGuests(e.target.value)}
+                    placeholder="e.g., 2"
                     className={`${inputClass} font-mono-num`}
                   />
                 </div>
@@ -368,34 +386,28 @@ export function HotelsPage({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Guest Requests
+                  Note (Optional)
                 </label>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Early check-in, extra mattress, valley-facing floor..."
+                  placeholder="Early check-in or extra bed..."
                   className={inputClass}
                 />
               </div>
 
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-1.5 text-sm">
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>
-                    {formatPkr(activeRoom.pricePerNightPkr)} &times; {nights} night(s)
-                  </span>
-                  <span className="font-mono-num text-slate-700">{formatPkr(estimatedTotal)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-slate-200 font-bold text-slate-900">
-                  <span>Estimated Total</span>
-                  <span className="font-mono-num text-[#0B5ED7]">
-                    {formatPkr(estimatedTotal)}
-                  </span>
-                </div>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm">
+                <span className="text-slate-600 text-xs font-medium">
+                  {nights > 0 ? `Total (${nights} night${nights > 1 ? 's' : ''})` : 'Estimated Total'}
+                </span>
+                <span className="font-bold font-mono-num text-[#0B5ED7]">
+                  {estimatedTotal > 0 ? formatPkr(estimatedTotal) : '—'}
+                </span>
               </div>
 
               {bookingErr && (
-                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-2.5">
                   {bookingErr}
                 </p>
               )}
@@ -412,7 +424,7 @@ export function HotelsPage({
                     }}
                     className="underline font-bold text-[#0B5ED7] cursor-pointer"
                   >
-                    Manage in My Hotel Reservations &rarr;
+                    Manage in My Reservations &rarr;
                   </button>
                 </div>
               )}
@@ -420,41 +432,26 @@ export function HotelsPage({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
+                className="w-full py-2.5 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
               >
-                {submitting ? 'Submitting...' : 'Request Hotel Reservation'}
+                {submitting ? 'Submitting...' : 'Request Reservation'}
               </button>
-
-              <div className="pt-4 border-t border-slate-100 space-y-2">
-                <button
-                  type="button"
-                  onClick={onOpenPaymentModal}
-                  className="w-full py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 text-xs font-semibold flex items-center justify-center gap-2 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Pay Online (Coming Soon)</span>
-                </button>
-                <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0B5ED7] shrink-0" />
-                  <span>{selected.cancellationPolicy}</span>
-                </p>
-              </div>
             </form>
 
             {selected.ownerUid !== firebaseUser?.uid && (
               <form
                 onSubmit={handleQuickMessage}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-6 space-y-3"
+                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-5 space-y-3"
               >
-                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-bold font-display text-slate-900 flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#0B5ED7]" />
                   <span>Message {selected.ownerName}</span>
                 </h3>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={msgText}
                   onChange={(e) => setMsgText(e.target.value)}
-                  placeholder="Ask about room availability, heating, parking, or group rates..."
+                  placeholder="Ask about availability or parking..."
                   className={inputClass}
                 />
                 {msgError && <p className="text-xs font-medium text-rose-600">{msgError}</p>}
@@ -476,7 +473,7 @@ export function HotelsPage({
                 <button
                   type="submit"
                   disabled={sendingMsg}
-                  className="w-full py-2.5 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
+                  className="w-full py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
                 >
                   {sendingMsg ? 'Sending...' : 'Send Direct Message'}
                 </button>
@@ -536,9 +533,9 @@ export function HotelsPage({
           </label>
           <input
             type="range"
-            min={5000}
-            max={50000}
-            step={1000}
+            min={2500}
+            max={20000}
+            step={500}
             value={maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             className="w-full accent-[#0B5ED7] mt-2"

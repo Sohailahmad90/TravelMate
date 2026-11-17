@@ -13,11 +13,11 @@ export function HotelDashboard() {
 
   const [tab, setTab] = useState<'hotels' | 'reservations' | 'messages'>('hotels');
   const [name, setName] = useState('');
-  const [destination, setDestination] = useState('Hunza Valley');
+  const [destination, setDestination] = useState('');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
-  const [deluxePrice, setDeluxePrice] = useState(16000);
-  const [familyPrice, setFamilyPrice] = useState(25000);
+  const [deluxePrice, setDeluxePrice] = useState('');
+  const [familyPrice, setFamilyPrice] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [actionErr, setActionErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -48,22 +48,31 @@ export function HotelDashboard() {
     e.preventDefault();
     setMsg(null);
     setActionErr(null);
+    const deluxeNum = Number(deluxePrice);
+    const familyNum = Number(familyPrice) || Math.round(deluxeNum * 1.4);
+    if (!deluxeNum || deluxeNum < 1000) {
+      setActionErr('Please enter a valid nightly rate in PKR.');
+      return;
+    }
     try {
       await upsertHotel({
-        name,
-        destination,
-        address,
-        description,
-        startingPricePkr: deluxePrice,
+        name: name.trim(),
+        destination: destination.trim(),
+        address: address.trim(),
+        description: description.trim(),
+        startingPricePkr: deluxeNum,
         facilities: ['Free Wi-Fi', 'Mountain View', 'Breakfast Included', 'Free Parking'],
         rooms: [
-          { roomType: 'Double', pricePerNightPkr: Math.round(deluxePrice * 0.8), totalRooms: 8, maxGuests: 2 },
-          { roomType: 'Deluxe', pricePerNightPkr: deluxePrice, totalRooms: 6, maxGuests: 3 },
-          { roomType: 'Family', pricePerNightPkr: familyPrice, totalRooms: 4, maxGuests: 5 },
+          { roomType: 'Double', pricePerNightPkr: Math.round(deluxeNum * 0.8), totalRooms: 8, maxGuests: 2 },
+          { roomType: 'Deluxe', pricePerNightPkr: deluxeNum, totalRooms: 6, maxGuests: 3 },
+          { roomType: 'Family', pricePerNightPkr: familyNum, totalRooms: 4, maxGuests: 5 },
         ],
       });
       setName('');
+      setDestination('');
       setAddress('');
+      setDeluxePrice('');
+      setFamilyPrice('');
       setDescription('');
       setMsg('Hotel registered successfully!');
     } catch (err) {
@@ -171,10 +180,12 @@ export function HotelDashboard() {
                 </label>
                 <input
                   type="number"
-                  min={2000}
+                  required
+                  min={1000}
                   step={500}
                   value={deluxePrice}
-                  onChange={(e) => setDeluxePrice(Number(e.target.value))}
+                  onChange={(e) => setDeluxePrice(e.target.value)}
+                  placeholder="e.g., 5500"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -184,10 +195,11 @@ export function HotelDashboard() {
                 </label>
                 <input
                   type="number"
-                  min={3000}
+                  min={1500}
                   step={500}
                   value={familyPrice}
-                  onChange={(e) => setFamilyPrice(Number(e.target.value))}
+                  onChange={(e) => setFamilyPrice(e.target.value)}
+                  placeholder="e.g., 8500"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -341,11 +353,11 @@ export function VehicleDashboard() {
   const [tab, setTab] = useState<'vehicles' | 'requests' | 'messages'>('vehicles');
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Vehicle['category']>('4x4 Jeep');
-  const [seats, setSeats] = useState(7);
-  const [pickupLocation, setPickupLocation] = useState('Skardu');
-  const [pricePerDay, setPricePerDay] = useState(14000);
+  const [seats, setSeats] = useState('');
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [pricePerDay, setPricePerDay] = useState('');
   const [driverOption, setDriverOption] = useState<DriverOption>('both');
-  const [driverFee, setDriverFee] = useState(2500);
+  const [driverFee, setDriverFee] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [actionErr, setActionErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -376,18 +388,29 @@ export function VehicleDashboard() {
     e.preventDefault();
     setMsg(null);
     setActionErr(null);
+    const seatsNum = Number(seats) || 4;
+    const rateNum = Number(pricePerDay);
+    const feeNum = driverOption === 'without_driver_only' ? 0 : Number(driverFee) || 0;
+    if (!rateNum || rateNum < 1000) {
+      setActionErr('Please enter a valid daily rental rate in PKR.');
+      return;
+    }
     try {
       await upsertVehicle({
-        name,
+        name: name.trim(),
         category,
-        seats,
-        pickupLocation,
-        pricePerDayPkr: pricePerDay,
+        seats: seatsNum,
+        pickupLocation: pickupLocation.trim(),
+        pricePerDayPkr: rateNum,
         driverOption,
-        driverFeePerDayPkr: driverOption === 'without_driver_only' ? 0 : driverFee,
-        serviceAreas: [pickupLocation, 'Hunza Valley', 'Skardu & Kachura'],
+        driverFeePerDayPkr: feeNum,
+        serviceAreas: [pickupLocation.trim(), 'Hunza Valley', 'Skardu & Kachura'].filter(Boolean),
       });
       setName('');
+      setSeats('');
+      setPickupLocation('');
+      setPricePerDay('');
+      setDriverFee('');
       setMsg('Vehicle added to your fleet!');
     } catch (err) {
       setActionErr(err instanceof Error ? err.message : 'Unable to register vehicle.');
@@ -490,10 +513,12 @@ export function VehicleDashboard() {
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Seats</label>
                 <input
                   type="number"
+                  required
                   min={2}
                   max={50}
                   value={seats}
-                  onChange={(e) => setSeats(Number(e.target.value))}
+                  onChange={(e) => setSeats(e.target.value)}
+                  placeholder="e.g., 7"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -506,6 +531,7 @@ export function VehicleDashboard() {
                   required
                   value={pickupLocation}
                   onChange={(e) => setPickupLocation(e.target.value)}
+                  placeholder="e.g., Skardu / Islamabad"
                   className={inputClass}
                 />
               </div>
@@ -515,10 +541,12 @@ export function VehicleDashboard() {
                 </label>
                 <input
                   type="number"
-                  min={3000}
+                  required
+                  min={1500}
                   step={500}
                   value={pricePerDay}
-                  onChange={(e) => setPricePerDay(Number(e.target.value))}
+                  onChange={(e) => setPricePerDay(e.target.value)}
+                  placeholder="e.g., 5500"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -546,7 +574,8 @@ export function VehicleDashboard() {
                   step={500}
                   disabled={driverOption === 'without_driver_only'}
                   value={driverFee}
-                  onChange={(e) => setDriverFee(Number(e.target.value))}
+                  onChange={(e) => setDriverFee(e.target.value)}
+                  placeholder="e.g., 1000"
                   className={`${inputClass} font-mono-num disabled:opacity-40`}
                 />
               </div>

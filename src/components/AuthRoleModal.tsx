@@ -50,8 +50,8 @@ export function AuthRoleModal() {
   const [selectedRole, setSelectedRole] =
     useState<Exclude<UserRole, 'admin'>>(authModalDefaultRole);
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('+92 300 ');
-  const [city, setCity] = useState('Islamabad');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -75,8 +75,8 @@ export function AuthRoleModal() {
         mode,
         role: selectedRole,
         fullName: fullName.trim() || undefined,
-        phone: phone.trim() === '+92 300' ? '' : phone.trim(),
-        city: city.trim() || 'Islamabad',
+        phone: phone.trim(),
+        city: city.trim(),
       });
     } finally {
       setSubmitting(false);

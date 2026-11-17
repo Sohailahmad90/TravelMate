@@ -67,9 +67,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
     'destinations' | 'guides' | 'hotels' | 'vehicles' | 'packages'
   >('destinations');
   const [searchQuery, setSearchQuery] = useState('');
-  const [fromCity, setFromCity] = useState('Islamabad');
-  const [travelDate, setTravelDate] = useState('2026-06-20');
-  const [guestCount, setGuestCount] = useState(2);
+  const [fromCity, setFromCity] = useState('');
+  const [travelDate, setTravelDate] = useState('');
+  const [guestCount, setGuestCount] = useState('');
   const [activeRegion, setActiveRegion] = useState<'All' | DestinationRegion>('All');
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -504,7 +504,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 type="text"
                 value={fromCity}
                 onChange={(e) => setFromCity(e.target.value)}
-                className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:border-[#0B5ED7]"
+                placeholder="From city"
+                className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7]"
               />
             </div>
 
@@ -558,8 +559,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
                   min={1}
                   max={30}
                   value={guestCount}
-                  onChange={(e) => setGuestCount(Number(e.target.value))}
-                  className="w-full rounded-xl bg-slate-50 border border-slate-200 pl-8 pr-3 py-2.5 text-sm font-mono-num text-slate-900 focus:outline-none focus:border-[#0B5ED7]"
+                  onChange={(e) => setGuestCount(e.target.value)}
+                  placeholder="Guests"
+                  className="w-full rounded-xl bg-slate-50 border border-slate-200 pl-8 pr-3 py-2.5 text-sm font-mono-num text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7]"
                 />
               </div>
             </div>

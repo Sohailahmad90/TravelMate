@@ -3,11 +3,9 @@ import {
   AlertCircle,
   ArrowLeft,
   Car,
-  CreditCard,
   MapPin,
   MessageSquare,
   Search,
-  ShieldCheck,
   Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -23,14 +21,13 @@ import { ResilientImage } from '../components/ResilientImage';
 interface VehiclesPageProps {
   initialQuery?: string;
   initialSelectedId?: string;
-  onOpenPaymentModal: () => void;
+  onOpenPaymentModal?: () => void;
   onNavigate: (page: ActivePage) => void;
 }
 
 export function VehiclesPage({
   initialQuery = '',
   initialSelectedId,
-  onOpenPaymentModal,
   onNavigate,
 }: VehiclesPageProps) {
   const { firebaseUser, effectiveRole, setDashboardTargetTab, openAuthModal } = useAuth();
@@ -42,9 +39,9 @@ export function VehiclesPage({
   const [minSeats, setMinSeats] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
 
-  // Rental Duration & Driver Calculator State
-  const [pickupDate, setPickupDate] = useState('2026-07-10');
-  const [returnDate, setReturnDate] = useState('2026-07-15');
+  // Compact Rental Form State (no pre-filled values)
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [withDriver, setWithDriver] = useState(true);
   const [notes, setNotes] = useState('');
@@ -91,7 +88,7 @@ export function VehiclesPage({
 
   const openVehicle = (v: Vehicle) => {
     setSelectedId(v.id);
-    setPickupLocation(v.pickupLocation);
+    setPickupLocation('');
     setWithDriver(v.driverOption !== 'without_driver_only');
     setBookingMsg(null);
     setBookingErr(null);
@@ -104,6 +101,15 @@ export function VehiclesPage({
     if (!selected) return;
     if (!firebaseUser) {
       openAuthModal('signin');
+      return;
+    }
+
+    if (!pickupDate || !returnDate) {
+      setBookingErr('Please choose pickup and return dates.');
+      return;
+    }
+    if (!pickupLocation.trim()) {
+      setBookingErr('Please enter your pickup city or location.');
       return;
     }
 
@@ -134,15 +140,16 @@ export function VehiclesPage({
         daysCount: days,
         guestsCount: selected.seats,
         driverSelected: effectiveDriver,
-        pickupLocation: pickupLocation || selected.pickupLocation,
+        pickupLocation: pickupLocation.trim(),
         estimatedTotalPkr: totalEstimate,
-        notes,
+        notes: notes.trim(),
       });
       setBookingMsg(
-        `Vehicle rental request for ${days} day(s) (${
-          effectiveDriver ? 'With Driver' : 'Without Driver / Self-Drive'
-        }) submitted to ${selected.ownerName}!`
+        `Rental request for ${days} day(s) submitted to ${selected.ownerName}!`
       );
+      setPickupDate('');
+      setReturnDate('');
+      setPickupLocation('');
       setNotes('');
     } catch (err) {
       setBookingErr(err instanceof Error ? err.message : 'Unable to submit rental request.');
@@ -169,7 +176,7 @@ export function VehiclesPage({
         text: msgText.trim(),
       });
       setMsgText('');
-      setMsgFeedback(`Message sent to ${selected.ownerName}. Check your Messages inbox for replies.`);
+      setMsgFeedback(`Message sent to ${selected.ownerName}. Check your Messages inbox.`);
     } catch (err) {
       setMsgError(err instanceof Error ? err.message : 'Unable to send message.');
     } finally {
@@ -178,10 +185,11 @@ export function VehiclesPage({
   };
 
   const inputClass =
-    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
+    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
 
   if (selected) {
-    const days = calculateDaysBetween(pickupDate, returnDate);
+    const hasDates = Boolean(pickupDate && returnDate);
+    const days = hasDates ? calculateDaysBetween(pickupDate, returnDate) : 0;
     const effectiveDriver =
       selected.driverOption === 'with_driver_only'
         ? true
@@ -189,9 +197,7 @@ export function VehiclesPage({
         ? false
         : withDriver;
     const driverFeeDaily = effectiveDriver ? selected.driverFeePerDayPkr || 0 : 0;
-    const baseSubtotal = selected.pricePerDayPkr * days;
-    const driverSubtotal = driverFeeDaily * days;
-    const estimatedTotal = baseSubtotal + driverSubtotal;
+    const estimatedTotal = days > 0 ? (selected.pricePerDayPkr + driverFeeDaily) * days : 0;
     const vehReviews = reviews.filter(
       (r) => r.targetType === 'vehicle' && r.targetId === selected.id
     );
@@ -290,15 +296,15 @@ export function VehiclesPage({
             </div>
           </div>
 
-          {/* Interactive Rental Duration & Driver Option Calculator + Direct Owner Message */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Compact Vehicle Booking Card + Quick Message */}
+          <div className="lg:col-span-4 space-y-5">
             <form
               onSubmit={handleBookVehicle}
-              className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-5"
+              className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 space-y-4"
             >
-              <div className="border-b border-slate-100 pb-4">
+              <div className="border-b border-slate-100 pb-3">
                 <span className="text-xs text-slate-500 block">Daily Vehicle Rate</span>
-                <span className="text-2xl font-extrabold font-mono-num text-[#0B5ED7]">
+                <span className="text-xl font-extrabold font-mono-num text-[#0B5ED7]">
                   {formatPkr(selected.pricePerDayPkr)}
                   <span className="text-xs text-slate-500 font-normal"> / day</span>
                 </span>
@@ -340,21 +346,22 @@ export function VehiclesPage({
                   required
                   value={pickupLocation}
                   onChange={(e) => setPickupLocation(e.target.value)}
+                  placeholder={`e.g., ${selected.pickupLocation}`}
                   className={inputClass}
                 />
               </div>
 
               {/* Driver Option Selection */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-slate-700">
-                  Driver Preference
+                  Driver Option
                 </label>
                 {selected.driverOption === 'both' ? (
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setWithDriver(true)}
-                      className={`p-3 rounded-xl border text-left text-xs transition-colors cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-colors cursor-pointer ${
                         withDriver
                           ? 'bg-blue-50 border-[#0B5ED7] text-slate-900'
                           : 'bg-slate-50 border-slate-200 text-slate-600'
@@ -368,70 +375,52 @@ export function VehiclesPage({
                     <button
                       type="button"
                       onClick={() => setWithDriver(false)}
-                      className={`p-3 rounded-xl border text-left text-xs transition-colors cursor-pointer ${
+                      className={`p-2.5 rounded-xl border text-left text-xs transition-colors cursor-pointer ${
                         !withDriver
                           ? 'bg-blue-50 border-[#0B5ED7] text-slate-900'
                           : 'bg-slate-50 border-slate-200 text-slate-600'
                       }`}
                     >
-                      <span className="font-bold block">Without Driver</span>
-                      <span className="text-[11px] text-slate-500">Self-drive</span>
+                      <span className="font-bold block">Self-Drive</span>
+                      <span className="text-[11px] text-slate-500">No driver</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-slate-800 flex items-center gap-2">
+                  <div className="rounded-xl bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-slate-800 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-[#0B5ED7] shrink-0" />
                     <span>
                       {selected.driverOption === 'with_driver_only'
-                        ? 'This vehicle is provided With Driver Only.'
-                        : 'This vehicle is available for Self-Drive (Without Driver) Only.'}
+                        ? 'With Driver Only'
+                        : 'Self-Drive Only'}
                     </span>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Route / Notes</label>
-                <textarea
-                  rows={2}
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Note (Optional)
+                </label>
+                <input
+                  type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Destinations planned (e.g., Skardu to Deosai)..."
+                  placeholder="Route e.g., Skardu to Deosai..."
                   className={inputClass}
                 />
               </div>
 
-              {/* Automatic Estimate Breakdown */}
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2 text-xs">
-                <div className="flex justify-between text-slate-600">
-                  <span>
-                    Vehicle ({days} day{days > 1 ? 's' : ''} &times;{' '}
-                    {formatPkr(selected.pricePerDayPkr)})
-                  </span>
-                  <span className="font-mono-num">{formatPkr(baseSubtotal)}</span>
-                </div>
-                {effectiveDriver && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>
-                      Driver ({days} day{days > 1 ? 's' : ''} &times;{' '}
-                      {formatPkr(driverFeeDaily)})
-                    </span>
-                    <span className="font-mono-num">{formatPkr(driverSubtotal)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
-                  <span>Estimated Rental Total</span>
-                  <span className="font-mono-num text-[#0B5ED7]">
-                    {formatPkr(estimatedTotal)}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Estimate only until {selected.ownerName} confirms dates &amp; route.
-                </p>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm">
+                <span className="text-slate-600 text-xs font-medium">
+                  {days > 0 ? `Total (${days} day${days > 1 ? 's' : ''})` : 'Estimated Total'}
+                </span>
+                <span className="font-bold font-mono-num text-[#0B5ED7]">
+                  {estimatedTotal > 0 ? formatPkr(estimatedTotal) : '—'}
+                </span>
               </div>
 
               {bookingErr && (
-                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-2.5">
                   {bookingErr}
                 </p>
               )}
@@ -448,7 +437,7 @@ export function VehiclesPage({
                     }}
                     className="underline font-bold text-[#0B5ED7] cursor-pointer"
                   >
-                    Track in My Vehicle Rentals &rarr;
+                    Track in My Rentals &rarr;
                   </button>
                 </div>
               )}
@@ -456,41 +445,26 @@ export function VehiclesPage({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
+                className="w-full py-2.5 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
               >
                 {submitting ? 'Submitting...' : 'Submit Rental Request'}
               </button>
-
-              <div className="pt-4 border-t border-slate-100 space-y-2">
-                <button
-                  type="button"
-                  onClick={onOpenPaymentModal}
-                  className="w-full py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 text-xs font-semibold flex items-center justify-center gap-2 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Pay Now (Online Payment Coming Soon)</span>
-                </button>
-                <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0B5ED7] shrink-0" />
-                  <span>No online payment needed to request a vehicle.</span>
-                </p>
-              </div>
             </form>
 
             {selected.ownerUid !== firebaseUser?.uid && (
               <form
                 onSubmit={handleQuickMessage}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-6 space-y-3"
+                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-5 space-y-3"
               >
-                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-bold font-display text-slate-900 flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#0B5ED7]" />
                   <span>Message {selected.ownerName}</span>
                 </h3>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={msgText}
                   onChange={(e) => setMsgText(e.target.value)}
-                  placeholder="Ask about pickup city, fuel terms, snow chains, or multi-day discounts..."
+                  placeholder="Ask about pickup or fuel terms..."
                   className={inputClass}
                 />
                 {msgError && <p className="text-xs font-medium text-rose-600">{msgError}</p>}
@@ -512,7 +486,7 @@ export function VehiclesPage({
                 <button
                   type="submit"
                   disabled={sendingMsg}
-                  className="w-full py-2.5 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
+                  className="w-full py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
                 >
                   {sendingMsg ? 'Sending...' : 'Send Direct Message'}
                 </button>

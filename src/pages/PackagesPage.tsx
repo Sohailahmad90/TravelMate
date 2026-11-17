@@ -2,10 +2,8 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Check,
-  CreditCard,
   MessageSquare,
   Search,
-  ShieldCheck,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -21,14 +19,13 @@ import { ResilientImage } from '../components/ResilientImage';
 interface PackagesPageProps {
   initialQuery?: string;
   initialSelectedId?: string;
-  onOpenPaymentModal: () => void;
+  onOpenPaymentModal?: () => void;
   onNavigate: (page: ActivePage) => void;
 }
 
 export function PackagesPage({
   initialQuery = '',
   initialSelectedId,
-  onOpenPaymentModal,
   onNavigate,
 }: PackagesPageProps) {
   const { firebaseUser, effectiveRole, setDashboardTargetTab, openAuthModal } = useAuth();
@@ -36,8 +33,8 @@ export function PackagesPage({
 
   const [query, setQuery] = useState(initialQuery);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
-  const [startDate, setStartDate] = useState('2026-06-20');
-  const [travelers, setTravelers] = useState(2);
+  const [startDate, setStartDate] = useState('');
+  const [travelers, setTravelers] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [bookingMessage, setBookingMessage] = useState<string | null>(null);
@@ -73,6 +70,16 @@ export function PackagesPage({
       return;
     }
 
+    const numTravelers = Number(travelers);
+    if (!startDate) {
+      setBookingError('Please select a departure date.');
+      return;
+    }
+    if (!numTravelers || numTravelers < (selected.minTravelers || 1)) {
+      setBookingError('Please enter the number of travellers.');
+      return;
+    }
+
     setSubmitting(true);
     setBookingMessage(null);
     setBookingError(null);
@@ -92,13 +99,15 @@ export function PackagesPage({
         startDate,
         endDate,
         daysCount: calculateDaysBetween(startDate, endDate),
-        guestsCount: travelers,
-        estimatedTotalPkr: selected.pricePerPersonPkr * travelers,
-        notes,
+        guestsCount: numTravelers,
+        estimatedTotalPkr: selected.pricePerPersonPkr * numTravelers,
+        notes: notes.trim(),
       });
       setBookingMessage(
-        'Package booking request saved! Your guide will confirm availability shortly.'
+        'Booking request submitted! Track confirmation in your Dashboard.'
       );
+      setStartDate('');
+      setTravelers('');
       setNotes('');
     } catch (err) {
       setBookingError(err instanceof Error ? err.message : 'Unable to submit booking.');
@@ -125,7 +134,7 @@ export function PackagesPage({
         text: msgText.trim(),
       });
       setMsgText('');
-      setMsgFeedback(`Message sent to ${selected.guideName}. Check your Messages inbox for replies.`);
+      setMsgFeedback(`Message sent to ${selected.guideName}. Check your Messages inbox.`);
     } catch (err) {
       setMsgError(err instanceof Error ? err.message : 'Unable to send message.');
     } finally {
@@ -134,10 +143,11 @@ export function PackagesPage({
   };
 
   const inputClass =
-    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
+    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
 
   if (selected) {
-    const estimatedTotal = selected.pricePerPersonPkr * travelers;
+    const numTravelers = Number(travelers) || 0;
+    const estimatedTotal = numTravelers > 0 ? selected.pricePerPersonPkr * numTravelers : 0;
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -232,8 +242,8 @@ export function PackagesPage({
             </div>
           </div>
 
-          {/* Booking / Role Notice Card + Direct Message */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Compact Booking Card + Quick Message */}
+          <div className="lg:col-span-4 space-y-5">
             {firebaseUser && effectiveRole === 'guide' ? (
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-4">
                 <div className="border-b border-slate-100 pb-4">
@@ -248,8 +258,7 @@ export function PackagesPage({
                       You Created This Tour Package
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Update pricing, itinerary, or publishing status for this package directly in
-                      your Tour Guide Studio.
+                      Update pricing, itinerary, or publishing status directly in your Guide Studio.
                     </p>
                     <button
                       type="button"
@@ -257,7 +266,7 @@ export function PackagesPage({
                         setDashboardTargetTab('packages');
                         onNavigate('dashboard');
                       }}
-                      className="w-full py-3 rounded-full bg-[#0B5ED7] text-white font-bold text-xs hover:bg-[#0842A0] transition-colors cursor-pointer"
+                      className="w-full py-2.5 rounded-full bg-[#0B5ED7] text-white font-bold text-xs hover:bg-[#0842A0] transition-colors cursor-pointer"
                     >
                       Edit in Tour Guide Studio
                     </button>
@@ -268,36 +277,24 @@ export function PackagesPage({
                       Tour Guide Account Notice
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Tour Guide accounts cannot book other guides&apos; tour packages. You can
-                      manage your own packages or independently book hotels and 4x4 vehicles.
+                      Tour Guide accounts cannot book other guides&apos; packages. You can manage
+                      your own packages or book hotels and 4x4 vehicles.
                     </p>
-                    <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          setDashboardTargetTab('packages');
-                          onNavigate('dashboard');
-                        }}
-                        className="w-full py-2.5 rounded-full bg-[#0B5ED7] text-white font-bold text-xs hover:bg-[#0842A0] transition-colors cursor-pointer"
+                        onClick={() => onNavigate('hotels')}
+                        className="py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] cursor-pointer"
                       >
-                        Open Guide Studio
+                        Hotels
                       </button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onNavigate('hotels')}
-                          className="py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] cursor-pointer"
-                        >
-                          Hotels
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onNavigate('vehicles')}
-                          className="py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] cursor-pointer"
-                        >
-                          Vehicles
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate('vehicles')}
+                        className="py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] cursor-pointer"
+                      >
+                        Vehicles
+                      </button>
                     </div>
                   </div>
                 )}
@@ -305,21 +302,23 @@ export function PackagesPage({
             ) : (
               <form
                 onSubmit={handleBookPackage}
-                className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-5"
+                className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 space-y-4"
               >
-                <div className="flex items-baseline justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
                   <div>
-                    <span className="text-xs text-slate-500 block">Price per person</span>
-                    <span className="text-2xl font-extrabold font-mono-num text-[#0B5ED7]">
+                    <span className="text-xs text-slate-500 block">Per Person</span>
+                    <span className="text-xl font-extrabold font-mono-num text-[#0B5ED7]">
                       {formatPkr(selected.pricePerPersonPkr)}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 font-medium">
-                    Group: {formatPkr(selected.groupPricePkr)}
-                  </span>
+                  {selected.groupPricePkr && (
+                    <span className="text-xs text-slate-500 font-medium">
+                      Group: {formatPkr(selected.groupPricePkr)}
+                    </span>
+                  )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Departure Date
@@ -334,51 +333,49 @@ export function PackagesPage({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Travellers ({selected.minTravelers || 1}–{selected.maxTravelers || 15})
+                      Travellers
                     </label>
                     <input
                       type="number"
+                      required
                       min={selected.minTravelers || 1}
                       max={selected.maxTravelers || 20}
                       value={travelers}
-                      onChange={(e) => setTravelers(Number(e.target.value))}
+                      onChange={(e) => setTravelers(e.target.value)}
+                      placeholder="e.g., 2"
                       className={`${inputClass} font-mono-num`}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Notes for Guide
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Pickup details or dietary notes..."
-                      className={inputClass}
-                    />
-                  </div>
                 </div>
 
-                <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Estimated Total</span>
-                    <span className="font-bold font-mono-num text-slate-900">
-                      {formatPkr(estimatedTotal)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Payment Status: Not Required Yet · Pay on confirmation
-                  </p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Pickup city or special request..."
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm">
+                  <span className="text-slate-600 text-xs font-medium">Estimated Total</span>
+                  <span className="font-bold font-mono-num text-[#0B5ED7]">
+                    {estimatedTotal > 0 ? formatPkr(estimatedTotal) : '—'}
+                  </span>
                 </div>
 
                 {bookingError && (
-                  <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                  <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-2.5">
                     {bookingError}
                   </p>
                 )}
 
                 {bookingMessage && (
-                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 space-y-2">
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 space-y-1.5">
                     <p>{bookingMessage}</p>
                     <button
                       type="button"
@@ -396,47 +393,27 @@ export function PackagesPage({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
+                  className="w-full py-2.5 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
                 >
-                  {submitting ? 'Submitting Request...' : 'Submit Booking Request'}
+                  {submitting ? 'Submitting...' : 'Submit Booking Request'}
                 </button>
-
-                {/* Disabled Online Payment Interface */}
-                <div className="pt-4 border-t border-slate-100 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>Online Payment Method</span>
-                    <span className="font-semibold text-[#F97316]">Coming Soon</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onOpenPaymentModal}
-                    className="w-full py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 text-xs font-semibold flex items-center justify-center gap-2 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Pay Now (Online Payment Coming Soon)</span>
-                  </button>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0B5ED7] shrink-0" />
-                    <span>{selected.cancellationPolicy}</span>
-                  </div>
-                </div>
               </form>
             )}
 
             {selected.ownerUid !== firebaseUser?.uid && (
               <form
                 onSubmit={handleQuickMessage}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-6 space-y-3"
+                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-5 space-y-3"
               >
-                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-bold font-display text-slate-900 flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#0B5ED7]" />
                   <span>Message {selected.guideName}</span>
                 </h3>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={msgText}
                   onChange={(e) => setMsgText(e.target.value)}
-                  placeholder="Ask about inclusions, departure dates, or custom group size..."
+                  placeholder="Ask about inclusions or dates..."
                   className={inputClass}
                 />
                 {msgError && <p className="text-xs font-medium text-rose-600">{msgError}</p>}
@@ -458,7 +435,7 @@ export function PackagesPage({
                 <button
                   type="submit"
                   disabled={sendingMsg}
-                  className="w-full py-2.5 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
+                  className="w-full py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
                 >
                   {sendingMsg ? 'Sending...' : 'Send Direct Message'}
                 </button>

@@ -120,74 +120,72 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
     selectTab('messages');
   };
 
-  // Profile form state
+  // Profile form state (empty by default unless saved profile exists)
   const [displayName, setDisplayName] = useState(
     myGuide?.displayName || profile?.fullName || ''
   );
-  const [bio, setBio] = useState(
-    myGuide?.bio || 'Certified Pakistani mountain and heritage tour guide.'
+  const [bio, setBio] = useState(myGuide?.bio || '');
+  const [expYears, setExpYears] = useState(
+    myGuide?.experienceYears ? String(myGuide.experienceYears) : ''
   );
-  const [expYears, setExpYears] = useState(myGuide?.experienceYears || 3);
-  const [startingPrice, setStartingPrice] = useState(myGuide?.startingPricePkr || 8000);
+  const [startingPrice, setStartingPrice] = useState(
+    myGuide?.startingPricePkr ? String(myGuide.startingPricePkr) : ''
+  );
   const [languagesText, setLanguagesText] = useState(
-    (myGuide?.languages || ['Urdu', 'English']).join(', ')
+    myGuide?.languages?.length ? myGuide.languages.join(', ') : ''
   );
   const [destsText, setDestsText] = useState(
-    (myGuide?.availableDestinations || ['Hunza Valley', 'Skardu & Kachura']).join(', ')
+    myGuide?.availableDestinations?.length ? myGuide.availableDestinations.join(', ') : ''
   );
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
   // CNIC Verification form state
   const [legalFullName, setLegalFullName] = useState(
-    myVerification?.legalFullName || profile?.fullName || ''
+    myVerification?.legalFullName || ''
   );
   const [cnicNumber, setCnicNumber] = useState(myVerification?.cnicNumber || '');
   const [contactNumber, setContactNumber] = useState(
-    myVerification?.contactNumber || profile?.phone || ''
+    myVerification?.contactNumber || ''
   );
   const [address, setAddress] = useState(myVerification?.address || '');
   const [cnicFrontRef, setCnicFrontRef] = useState(
-    myVerification?.cnicFrontReference || 'CNIC_Front_Scan_Uploaded'
+    myVerification?.cnicFrontReference || ''
   );
   const [cnicBackRef, setCnicBackRef] = useState(
-    myVerification?.cnicBackReference || 'CNIC_Back_Scan_Uploaded'
+    myVerification?.cnicBackReference || ''
   );
   const [certificateTitle, setCertificateTitle] = useState(
-    myVerification?.certificateTitle || 'PTDC / Alpine Club Licensed Guide'
+    myVerification?.certificateTitle || ''
   );
   const [verMsg, setVerMsg] = useState<string | null>(null);
 
-  // Create / Edit Package form state
+  // Create / Edit Package form state (empty by default)
   const [editingPkgId, setEditingPkgId] = useState<string | null>(null);
   const [pkgTitle, setPkgTitle] = useState('');
-  const [pkgDest, setPkgDest] = useState('Hunza Valley');
+  const [pkgDest, setPkgDest] = useState('');
   const [pkgImage, setPkgImage] = useState(PACKAGE_IMAGE_OPTIONS[0].url);
-  const [pkgDays, setPkgDays] = useState(5);
-  const [pkgNights, setPkgNights] = useState(4);
-  const [pkgPrice, setPkgPrice] = useState(55000);
-  const [pkgIncluded, setPkgIncluded] = useState(
-    '4x4 Transport, Mountain Lodge Stay, Daily Breakfast, Guide Services'
-  );
-  const [pkgAccommodation, setPkgAccommodation] = useState('3-Star Mountain Lodges');
-  const [pkgTransport, setPkgTransport] = useState('4x4 Prado / Grand Cabin');
+  const [pkgDays, setPkgDays] = useState('');
+  const [pkgNights, setPkgNights] = useState('');
+  const [pkgPrice, setPkgPrice] = useState('');
+  const [pkgIncluded, setPkgIncluded] = useState('');
+  const [pkgAccommodation, setPkgAccommodation] = useState('');
+  const [pkgTransport, setPkgTransport] = useState('');
   const [pkgDesc, setPkgDesc] = useState('');
   const [pkgPublish, setPkgPublish] = useState(true);
   const [pkgSubmitting, setPkgSubmitting] = useState(false);
   const [pkgMsg, setPkgMsg] = useState<string | null>(null);
   const [pkgErr, setPkgErr] = useState<string | null>(null);
 
-  // Add Video form state
+  // Add Video form state (empty by default)
   const [vidTitle, setVidTitle] = useState('');
-  const [vidDest, setVidDest] = useState('Hunza Valley');
-  const [vidDate, setVidDate] = useState('September 2026');
-  const [vidUrl, setVidUrl] = useState(
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
-  );
+  const [vidDest, setVidDest] = useState('');
+  const [vidDate, setVidDate] = useState('');
+  const [vidUrl, setVidUrl] = useState('');
   const [vidDesc, setVidDesc] = useState('');
 
   // Quotation & Request Action State
   const [quotingReq, setQuotingReq] = useState<GuideRequest | null>(null);
-  const [quotePrice, setQuotePrice] = useState(145000);
+  const [quotePrice, setQuotePrice] = useState('');
   const [quoteItinerary, setQuoteItinerary] = useState('');
   const [quoteMessage, setQuoteMessage] = useState('');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -231,14 +229,14 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
   const resetPackageForm = () => {
     setEditingPkgId(null);
     setPkgTitle('');
-    setPkgDest('Hunza Valley');
+    setPkgDest('');
     setPkgImage(PACKAGE_IMAGE_OPTIONS[0].url);
-    setPkgDays(5);
-    setPkgNights(4);
-    setPkgPrice(55000);
-    setPkgIncluded('4x4 Transport, Mountain Lodge Stay, Daily Breakfast, Guide Services');
-    setPkgAccommodation('3-Star Mountain Lodges');
-    setPkgTransport('4x4 Prado / Grand Cabin');
+    setPkgDays('');
+    setPkgNights('');
+    setPkgPrice('');
+    setPkgIncluded('');
+    setPkgAccommodation('');
+    setPkgTransport('');
     setPkgDesc('');
     setPkgPublish(true);
   };
@@ -249,12 +247,12 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
     setPkgTitle(pkg.title);
     setPkgDest(pkg.destination);
     setPkgImage(pkg.imageUrl || PACKAGE_IMAGE_OPTIONS[0].url);
-    setPkgDays(pkg.days);
-    setPkgNights(pkg.nights);
-    setPkgPrice(pkg.pricePerPersonPkr);
+    setPkgDays(String(pkg.days));
+    setPkgNights(String(pkg.nights));
+    setPkgPrice(String(pkg.pricePerPersonPkr));
     setPkgIncluded((pkg.includedServices || []).join(', '));
-    setPkgAccommodation(pkg.accommodationSummary || '3-Star Mountain Lodges');
-    setPkgTransport(pkg.transportSummary || '4x4 Prado / Grand Cabin');
+    setPkgAccommodation(pkg.accommodationSummary || '');
+    setPkgTransport(pkg.transportSummary || '');
     setPkgDesc(pkg.description || '');
     setPkgPublish(pkg.isPublished);
     setPkgMsg(null);
@@ -267,10 +265,10 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
     setProfileMsg(null);
     try {
       await upsertGuideProfile({
-        displayName,
-        bio,
-        experienceYears: expYears,
-        startingPricePkr: startingPrice,
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        experienceYears: Number(expYears) || 1,
+        startingPricePkr: Number(startingPrice) || 2500,
         languages: languagesText.split(',').map((s) => s.trim()).filter(Boolean),
         availableDestinations: destsText.split(',').map((s) => s.trim()).filter(Boolean),
       });
@@ -284,15 +282,18 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
     e.preventDefault();
     setVerMsg(null);
     try {
-      await upsertGuideProfile({ displayName: displayName || legalFullName, bio });
+      await upsertGuideProfile({
+        displayName: displayName || legalFullName,
+        bio: bio.trim() || 'Local Pakistan Tour Guide',
+      });
       await submitGuideVerification({
-        legalFullName,
-        cnicNumber,
-        contactNumber,
-        address,
-        cnicFrontReference: cnicFrontRef,
-        cnicBackReference: cnicBackRef,
-        certificateTitle,
+        legalFullName: legalFullName.trim(),
+        cnicNumber: cnicNumber.trim(),
+        contactNumber: contactNumber.trim(),
+        address: address.trim(),
+        cnicFrontReference: cnicFrontRef.trim(),
+        cnicBackReference: cnicBackRef.trim(),
+        certificateTitle: certificateTitle.trim(),
       });
       setVerMsg(
         'CNIC verification submitted privately! An admin will review and unlock your Verified Badge.'
@@ -307,6 +308,19 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
     setPkgSubmitting(true);
     setPkgMsg(null);
     setPkgErr(null);
+    const daysVal = Number(pkgDays);
+    const nightsVal = Number(pkgNights) || Math.max(0, daysVal - 1);
+    const priceVal = Number(pkgPrice);
+    if (!daysVal || daysVal < 1) {
+      setPkgErr('Please enter valid number of days.');
+      setPkgSubmitting(false);
+      return;
+    }
+    if (!priceVal || priceVal < 1000) {
+      setPkgErr('Please enter package price per person in PKR.');
+      setPkgSubmitting(false);
+      return;
+    }
     try {
       const existingPkg = editingPkgId
         ? myPackages.find((p) => p.id === editingPkgId)
@@ -314,20 +328,20 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
       await upsertPackage({
         ...(existingPkg || {}),
         ...(editingPkgId ? { id: editingPkgId } : {}),
-        title: pkgTitle,
-        destination: pkgDest,
+        title: pkgTitle.trim(),
+        destination: pkgDest.trim(),
         imageUrl: pkgImage,
-        days: pkgDays,
-        nights: pkgNights,
-        pricePerPersonPkr: pkgPrice,
-        groupPricePkr: pkgPrice * 4,
+        days: daysVal,
+        nights: nightsVal,
+        pricePerPersonPkr: priceVal,
+        groupPricePkr: priceVal * 4,
         includedServices: pkgIncluded
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
-        accommodationSummary: pkgAccommodation,
-        transportSummary: pkgTransport,
-        description: pkgDesc,
+        accommodationSummary: pkgAccommodation.trim(),
+        transportSummary: pkgTransport.trim(),
+        description: pkgDesc.trim(),
         isPublished: pkgPublish,
       });
       const wasEditing = Boolean(editingPkgId);
@@ -400,18 +414,24 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
   const handleSendQuote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quotingReq) return;
+    const priceNum = Number(quotePrice);
+    if (!priceNum || priceNum < 1000) {
+      setActionError('Please enter a valid quotation price in PKR.');
+      return;
+    }
     setBusyId(quotingReq.id);
     setActionFeedback(null);
     setActionError(null);
     try {
       await respondToGuideRequest(quotingReq, {
         status: 'quotation_sent',
-        quotedPricePkr: quotePrice,
+        quotedPricePkr: priceNum,
         proposedItinerary: quoteItinerary,
         guideMessage: quoteMessage,
       });
       setActionFeedback(`Custom quotation sent to ${quotingReq.touristName}.`);
       setQuotingReq(null);
+      setQuotePrice('');
       setQuoteItinerary('');
       setQuoteMessage('');
     } catch (err) {
@@ -626,6 +646,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your guide name"
                   className={inputClass}
                 />
               </div>
@@ -633,10 +654,12 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Experience (Years)</label>
                 <input
                   type="number"
+                  required
                   min={0}
                   max={60}
                   value={expYears}
-                  onChange={(e) => setExpYears(Number(e.target.value))}
+                  onChange={(e) => setExpYears(e.target.value)}
+                  placeholder="e.g., 5"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -644,10 +667,12 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Daily Fee (PKR)</label>
                 <input
                   type="number"
+                  required
                   min={1000}
                   step={500}
                   value={startingPrice}
-                  onChange={(e) => setStartingPrice(Number(e.target.value))}
+                  onChange={(e) => setStartingPrice(e.target.value)}
+                  placeholder="e.g., 3000"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -659,6 +684,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 required
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
+                placeholder="Describe your guiding background and specialties..."
                 className={inputClass}
               />
             </div>
@@ -671,6 +697,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   type="text"
                   value={languagesText}
                   onChange={(e) => setLanguagesText(e.target.value)}
+                  placeholder="e.g., Urdu, English"
                   className={inputClass}
                 />
               </div>
@@ -682,6 +709,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   type="text"
                   value={destsText}
                   onChange={(e) => setDestsText(e.target.value)}
+                  placeholder="e.g., Hunza Valley, Skardu"
                   className={inputClass}
                 />
               </div>
@@ -777,9 +805,11 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">Days</label>
                 <input
                   type="number"
+                  required
                   min={1}
                   value={pkgDays}
-                  onChange={(e) => setPkgDays(Number(e.target.value))}
+                  onChange={(e) => setPkgDays(e.target.value)}
+                  placeholder="e.g., 4"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -789,7 +819,8 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   type="number"
                   min={0}
                   value={pkgNights}
-                  onChange={(e) => setPkgNights(Number(e.target.value))}
+                  onChange={(e) => setPkgNights(e.target.value)}
+                  placeholder="e.g., 3"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -799,10 +830,12 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 </label>
                 <input
                   type="number"
-                  min={5000}
-                  step={1000}
+                  required
+                  min={1000}
+                  step={500}
                   value={pkgPrice}
-                  onChange={(e) => setPkgPrice(Number(e.target.value))}
+                  onChange={(e) => setPkgPrice(e.target.value)}
+                  placeholder="e.g., 16000"
                   className={`${inputClass} font-mono-num`}
                 />
               </div>
@@ -817,6 +850,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   type="text"
                   value={pkgAccommodation}
                   onChange={(e) => setPkgAccommodation(e.target.value)}
+                  placeholder="e.g., Mountain Lodges"
                   className={inputClass}
                 />
               </div>
@@ -828,6 +862,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                   type="text"
                   value={pkgTransport}
                   onChange={(e) => setPkgTransport(e.target.value)}
+                  placeholder="e.g., 4x4 Prado / Van"
                   className={inputClass}
                 />
               </div>
@@ -841,6 +876,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 type="text"
                 value={pkgIncluded}
                 onChange={(e) => setPkgIncluded(e.target.value)}
+                placeholder="e.g., Transport, Lodge Stay, Breakfast, Guide"
                 className={inputClass}
               />
             </div>
@@ -985,7 +1021,8 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                     required
                     min={1000}
                     value={quotePrice}
-                    onChange={(e) => setQuotePrice(Number(e.target.value))}
+                    onChange={(e) => setQuotePrice(e.target.value)}
+                    placeholder="Enter quote in PKR"
                     className={`${inputClass} font-mono-num`}
                   />
                 </div>
@@ -1071,7 +1108,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                     type="button"
                     onClick={() => {
                       setQuotingReq(req);
-                      setQuotePrice(req.quotedPricePkr || req.budgetPkr);
+                      setQuotePrice(req.quotedPricePkr ? String(req.quotedPricePkr) : '');
                     }}
                     className="px-4 py-1.5 rounded-full bg-[#0B5ED7] text-white text-xs font-bold hover:bg-[#0842A0] cursor-pointer"
                   >
@@ -1285,6 +1322,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 required
                 value={legalFullName}
                 onChange={(e) => setLegalFullName(e.target.value)}
+                placeholder="Enter full name per CNIC"
                 className={inputClass}
               />
             </div>
@@ -1306,6 +1344,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 required
                 value={contactNumber}
                 onChange={(e) => setContactNumber(e.target.value)}
+                placeholder="+92 300 0000000"
                 className={inputClass}
               />
             </div>
@@ -1317,6 +1356,7 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
                 type="text"
                 value={certificateTitle}
                 onChange={(e) => setCertificateTitle(e.target.value)}
+                placeholder="e.g., PTDC / Alpine Club License"
                 className={inputClass}
               />
             </div>
@@ -1337,25 +1377,25 @@ export function GuideDashboard({ onNavigate }: GuideDashboardProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                CNIC Front Document Reference
+                CNIC Front Reference (Optional)
               </label>
               <input
                 type="text"
-                required
                 value={cnicFrontRef}
                 onChange={(e) => setCnicFrontRef(e.target.value)}
+                placeholder="File name or drive link"
                 className={inputClass}
               />
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                CNIC Back Document Reference
+                CNIC Back Reference (Optional)
               </label>
               <input
                 type="text"
-                required
                 value={cnicBackRef}
                 onChange={(e) => setCnicBackRef(e.target.value)}
+                placeholder="File name or drive link"
                 className={inputClass}
               />
             </div>

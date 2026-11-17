@@ -38,9 +38,9 @@ const ROLE_OPTIONS: {
 export function RoleOnboardingModal() {
   const { firebaseUser, needsOnboarding, completeOnboarding, logout } = useAuth();
   const [role, setRole] = useState<Exclude<UserRole, 'admin'>>('tourist');
-  const [fullName, setFullName] = useState(firebaseUser?.displayName || '');
-  const [phone, setPhone] = useState('+92 300 ');
-  const [city, setCity] = useState('Islamabad');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export function RoleOnboardingModal() {
       await completeOnboarding({
         fullName: fullName.trim(),
         phone: phone.trim(),
-        city: city.trim() || 'Islamabad',
+        city: city.trim(),
         role,
       });
     } catch (err) {

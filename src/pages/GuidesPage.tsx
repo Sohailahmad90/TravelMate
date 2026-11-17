@@ -3,6 +3,9 @@ import {
   ArrowLeft,
   BadgeCheck,
   Bookmark,
+  Calendar,
+  CheckCircle2,
+  Home,
   MessageSquare,
   Play,
   Search,
@@ -38,27 +41,36 @@ export function GuidesPage({
     guideVideos,
     packages,
     reviews,
+    createTravelPlan,
     sendGuideRequest,
     sendMessage,
+    setMessagingTarget,
   } = useMarketplace();
 
   const [query, setQuery] = useState(initialQuery);
   const [languageFilter, setLanguageFilter] = useState('All');
-  const [maxBudget, setMaxBudget] = useState<number>(20000);
+  const [maxBudget, setMaxBudget] = useState<number>(10000);
   const [minExp, setMinExp] = useState<number>(0);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
-  // Custom Trip Request inline modal/form state
+  // Custom Trip Request form state (no pre-filled values)
   const [tripTitle, setTripTitle] = useState('');
-  const [destinationsText, setDestinationsText] = useState('Hunza Valley, Skardu');
-  const [departureDate, setDepartureDate] = useState('2026-06-15');
-  const [returnDate, setReturnDate] = useState('2026-06-22');
-  const [travelersCount, setTravelersCount] = useState(4);
-  const [budgetPkr, setBudgetPkr] = useState(180000);
+  const [destinationsText, setDestinationsText] = useState('');
+  const [departureDate, setDepartureDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [travelersCount, setTravelersCount] = useState('');
+  const [budgetPkr, setBudgetPkr] = useState('');
   const [notes, setNotes] = useState('');
   const [reqFeedback, setReqFeedback] = useState<string | null>(null);
+  const [reqError, setReqError] = useState<string | null>(null);
   const [sendingReq, setSendingReq] = useState(false);
+
+  // 3-Option Success Popup Modal state
+  const [sentModal, setSentModal] = useState<{
+    tripTitle: string;
+    guide: GuideProfile;
+  } | null>(null);
 
   // Quick message state
   const [msgText, setMsgText] = useState('');
@@ -100,32 +112,82 @@ export function GuidesPage({
       openAuthModal('signin');
       return;
     }
-    setSendingReq(true);
+
     setReqFeedback(null);
+    setReqError(null);
+
+    const destList = destinationsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const numTravelers = Number(travelersCount);
+    const numBudget = Number(budgetPkr);
+
+    if (tripTitle.trim().length < 2) {
+      setReqError('Please enter a trip title.');
+      return;
+    }
+    if (destList.length === 0) {
+      setReqError('Please enter at least one destination.');
+      return;
+    }
+    if (!departureDate || !returnDate) {
+      setReqError('Please choose departure and return dates.');
+      return;
+    }
+    if (!numTravelers || numTravelers < 1) {
+      setReqError('Please enter the number of travellers.');
+      return;
+    }
+    if (!budgetPkr || Number.isNaN(numBudget) || numBudget < 1000) {
+      setReqError('Please enter your budget in PKR.');
+      return;
+    }
+
+    setSendingReq(true);
     try {
-      await sendGuideRequest({
-        guide: selected,
-        tripTitle: tripTitle.trim() || `Custom Trip with ${selected.displayName}`,
-        startingLocation: 'Islamabad',
-        destinations: destinationsText
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
+      const cleanTitle = tripTitle.trim();
+      const plan = await createTravelPlan({
+        title: cleanTitle,
+        startingLocation: profile?.city || 'Islamabad',
+        destinations: destList,
         departureDate,
         returnDate,
-        travelersCount,
-        budgetPkr,
-        preferredTransport: '4x4 Prado / SUV',
-        hotelRequirement: 'Boutique 3-Star / Mountain Lodge',
-        notes,
+        travelersCount: numTravelers,
+        budgetPkr: numBudget,
+        specialInstructions: notes.trim(),
+        estimatedCostPkr: numBudget,
+        status: 'sent',
       });
-      setReqFeedback(
-        `Request sent to ${selected.displayName}. Track acceptance & quotations in your Dashboard.`
-      );
+
+      await sendGuideRequest({
+        planId: plan.id,
+        guide: selected,
+        tripTitle: cleanTitle,
+        startingLocation: profile?.city || 'Islamabad',
+        destinations: destList,
+        departureDate,
+        returnDate,
+        travelersCount: numTravelers,
+        budgetPkr: numBudget,
+        preferredTransport: 'Flexible',
+        hotelRequirement: 'Standard',
+        notes: notes.trim(),
+      });
+
+      setSentModal({
+        tripTitle: cleanTitle,
+        guide: selected,
+      });
       setTripTitle('');
+      setDestinationsText('');
+      setDepartureDate('');
+      setReturnDate('');
+      setTravelersCount('');
+      setBudgetPkr('');
       setNotes('');
     } catch (err) {
-      setReqFeedback(err instanceof Error ? err.message : 'Unable to submit request.');
+      setReqError(err instanceof Error ? err.message : 'Unable to submit request.');
     } finally {
       setSendingReq(false);
     }
@@ -157,7 +219,7 @@ export function GuidesPage({
   };
 
   const inputClass =
-    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
+    'w-full rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0B5ED7] focus:bg-white';
 
   if (selected) {
     const isSaved = Boolean(profile?.savedGuideIds?.includes(selected.guideId));
@@ -450,24 +512,22 @@ export function GuidesPage({
             ) : (
               <form
                 onSubmit={handleSendCustomRequest}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-6 space-y-4"
+                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-5 space-y-3.5"
               >
                 <h3 className="text-lg font-bold font-display text-slate-900">
-                  Send Custom Trip Request
+                  Send Custom Trip Plan
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Share your route and budget. {selected.displayName} will respond or accept your
-                  trip plan directly.
-                </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Trip Title</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Trip Title
+                  </label>
                   <input
                     type="text"
                     required
                     value={tripTitle}
                     onChange={(e) => setTripTitle(e.target.value)}
-                    placeholder="e.g., Family Trip to Hunza & Skardu"
+                    placeholder="e.g., Family Trip to Hunza"
                     className={inputClass}
                   />
                 </div>
@@ -481,6 +541,7 @@ export function GuidesPage({
                     required
                     value={destinationsText}
                     onChange={(e) => setDestinationsText(e.target.value)}
+                    placeholder="e.g., Hunza Valley, Skardu"
                     className={inputClass}
                   />
                 </div>
@@ -517,23 +578,27 @@ export function GuidesPage({
                     </label>
                     <input
                       type="number"
+                      required
                       min={1}
                       max={50}
                       value={travelersCount}
-                      onChange={(e) => setTravelersCount(Number(e.target.value))}
+                      onChange={(e) => setTravelersCount(e.target.value)}
+                      placeholder="e.g., 4"
                       className={`${inputClass} font-mono-num`}
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Total Budget (PKR)
+                      Budget (PKR)
                     </label>
                     <input
                       type="number"
-                      min={5000}
-                      step={5000}
+                      required
+                      min={1000}
+                      step={1000}
                       value={budgetPkr}
-                      onChange={(e) => setBudgetPkr(Number(e.target.value))}
+                      onChange={(e) => setBudgetPkr(e.target.value)}
+                      placeholder="e.g., 55000"
                       className={`${inputClass} font-mono-num`}
                     />
                   </div>
@@ -541,19 +606,25 @@ export function GuidesPage({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Special Instructions
+                    Note (Optional)
                   </label>
-                  <textarea
-                    rows={3}
+                  <input
+                    type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Preferred hotels, child-friendly pace, photography stops..."
+                    placeholder="Any hotel or pace preference..."
                     className={inputClass}
                   />
                 </div>
 
+                {reqError && (
+                  <p className="text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-2.5">
+                    {reqError}
+                  </p>
+                )}
+
                 {reqFeedback && (
-                  <p className="text-xs font-medium text-[#0B5ED7] bg-blue-50 border border-blue-200 rounded-xl p-3">
+                  <p className="text-xs font-medium text-[#0B5ED7] bg-blue-50 border border-blue-200 rounded-xl p-2.5">
                     {reqFeedback}
                   </p>
                 )}
@@ -561,7 +632,7 @@ export function GuidesPage({
                 <button
                   type="submit"
                   disabled={sendingReq}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#0B5ED7] text-white text-sm font-bold hover:bg-[#0842A0] transition-colors cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#0B5ED7] text-white text-sm font-bold hover:bg-[#0842A0] transition-colors cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>{sendingReq ? 'Sending...' : 'Send Trip Plan to Guide'}</span>
@@ -573,17 +644,17 @@ export function GuidesPage({
             {selected.ownerUid !== firebaseUser?.uid && (
               <form
                 onSubmit={handleQuickMessage}
-                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-6 space-y-3"
+                className="rounded-2xl bg-white border border-slate-200 shadow-xs p-5 space-y-3"
               >
-                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-bold font-display text-slate-900 flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#0B5ED7]" />
                   <span>Message {selected.displayName}</span>
                 </h3>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={msgText}
                   onChange={(e) => setMsgText(e.target.value)}
-                  placeholder="Ask about road conditions, availability, or itinerary options..."
+                  placeholder="Ask about availability or route..."
                   className={inputClass}
                 />
                 {msgFeedback && (
@@ -603,7 +674,7 @@ export function GuidesPage({
                 )}
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
+                  className="w-full py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-800 hover:border-[#0B5ED7] hover:text-[#0B5ED7] transition-colors cursor-pointer"
                 >
                   Send Direct Message
                 </button>
@@ -611,6 +682,81 @@ export function GuidesPage({
             )}
           </div>
         </div>
+
+        {/* Trip Plan Sent Successfully Modal (3 Options: Message Guide, View Your Plan, Back to Home) */}
+        {sentModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-trip-sent-title"
+          >
+            <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-2xl text-slate-900 space-y-5">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h2
+                  id="guide-trip-sent-title"
+                  className="text-2xl font-extrabold font-display text-slate-900"
+                >
+                  Trip Plan Sent!
+                </h2>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Your plan{' '}
+                  <strong className="text-slate-900">&ldquo;{sentModal.tripTitle}&rdquo;</strong> has
+                  been sent to{' '}
+                  <strong className="text-[#0B5ED7]">{sentModal.guide.displayName}</strong>.
+                </p>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMessagingTarget({
+                      recipientUid: sentModal.guide.ownerUid,
+                      recipientName: sentModal.guide.displayName,
+                      relatedListingTitle: sentModal.tripTitle,
+                    });
+                    setSentModal(null);
+                    setDashboardTargetTab('messages');
+                    onNavigate('dashboard');
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-full bg-[#0B5ED7] text-white font-bold text-sm hover:bg-[#0842A0] transition-colors cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Message Guide</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSentModal(null);
+                    setDashboardTargetTab('plans');
+                    onNavigate('dashboard');
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full border border-[#0B5ED7] bg-blue-50 text-[#0B5ED7] font-bold text-sm hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>View Your Plan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSentModal(null);
+                    onNavigate('home');
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Back to Home</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -663,8 +809,8 @@ export function GuidesPage({
           </label>
           <input
             type="range"
-            min={5000}
-            max={25000}
+            min={1500}
+            max={10000}
             step={500}
             value={maxBudget}
             onChange={(e) => setMaxBudget(Number(e.target.value))}

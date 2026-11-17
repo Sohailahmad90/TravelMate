@@ -68,7 +68,7 @@ export function ProfileSettingsModal() {
       setFullName(profile?.fullName || firebaseUser.displayName || '');
       setEmail(profile?.email || firebaseUser.email || '');
       setPhone(profile?.phone || '');
-      setCity(profile?.city || 'Islamabad');
+      setCity(profile?.city || '');
       setAvatarUrl(profile?.avatarUrl || firebaseUser.photoURL || '');
       setStatusMsg(null);
       setErrorMsg(null);
@@ -103,7 +103,7 @@ export function ProfileSettingsModal() {
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        city: city.trim() || 'Islamabad',
+        city: city.trim(),
         avatarUrl: avatarUrl.trim(),
       });
       setStatusMsg('Profile settings saved successfully.');
