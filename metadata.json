@@ -1,0 +1,6 @@
+{
+  "name": "TravelMate",
+  "description": "Full-stack Pakistan travel, verified tour guide, hotel reservation, and 4x4 vehicle rental marketplace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

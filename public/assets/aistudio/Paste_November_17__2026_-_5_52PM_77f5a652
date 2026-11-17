@@ -1,0 +1,1262 @@
+# PROJECT NAME: TRAVELMATE
+## Full-Stack Travel, Tourism, Tour Guide, Hotel & Vehicle Rental Platform
+
+Act as an expert full-stack software developer, UI/UX designer, database architect, and software engineer.
+
+Your task is to design and develop a complete, modern, responsive, and fully functional full-stack travel and tourism website named **TravelMate**.
+
+TravelMate is a multi-vendor travel and tourism marketplace primarily focused on Pakistan, especially Gilgit-Baltistan, Hunza, Skardu, Gilgit, Naran, Kaghan, Murree, Swat, and other popular tourist destinations.
+
+The platform connects four major types of users:
+
+1. Tour Guides
+2. Tourists / Travellers
+3. Hotel Owners
+4. Car Rental / Vehicle Owners
+
+The platform must allow tourists to plan trips, hire verified tour guides, book tour packages, reserve hotels independently, and rent vehicles for a selected number of days.
+
+IMPORTANT PAYMENT REQUIREMENT:
+
+Online payments are NOT being implemented in the current version. Keep all online payment functionality disabled.
+
+Whenever a user clicks any online payment button, display a professional notification or modal:
+
+"Online Payments Coming Soon! We are working on secure online payments. You can continue with your booking request and our team will update you when online payments become available."
+
+Do not redirect users to a payment gateway. Do not collect card details or pretend that payments have been processed.
+
+Booking requests and booking management must work independently of online payments.
+
+---
+
+# 1. WEBSITE OBJECTIVE
+
+Create a single platform where tourists can manage their complete travel experience.
+
+A tourist should be able to:
+
+- Explore tourist destinations.
+- Discover verified tour guides.
+- View tour guide profiles and previous tour videos.
+- Explore guide-created tour packages.
+- Create a custom travel plan.
+- Send custom travel plans to selected guides.
+- Receive guide quotations.
+- Accept or reject quotations.
+- Submit booking requests.
+- Book hotels without hiring a tour guide.
+- Rent cars, jeeps, SUVs, vans, and other vehicles.
+- Choose a vehicle with or without a driver.
+- Manage all travel bookings from one dashboard.
+
+Service providers should have separate dashboards to manage their profiles, listings, bookings, and requests.
+
+The admin should manage the entire platform.
+
+---
+
+# 2. USER ROLES AND AUTHENTICATION
+
+Create a complete authentication system with four user roles.
+
+## 2.1 Tourist / Traveller
+
+Registration fields:
+- Full name.
+- Email.
+- Phone number.
+- Password.
+- Confirm password.
+
+Features:
+- Sign up and login.
+- Email verification.
+- Forgot password.
+- Reset password.
+- Profile management.
+- Profile picture.
+- Personal information.
+- Saved destinations.
+- Saved guides.
+- Booking history.
+- Notifications.
+- Messages.
+- Account settings.
+
+## 2.2 Tour Guide
+
+Registration fields:
+- Full legal name.
+- Email.
+- Phone number.
+- Password.
+- CNIC number.
+- Address.
+- Profile picture.
+- Experience.
+- Languages.
+- Specialization.
+- Service locations.
+
+Guide accounts must complete verification before their packages become available for public booking.
+
+## 2.3 Hotel Owner
+
+Registration fields:
+- Owner name.
+- Email.
+- Phone number.
+- Password.
+- Hotel/business name.
+- Business address.
+- Verification documents.
+
+Hotel owners can manage their properties and bookings after admin approval.
+
+## 2.4 Vehicle Owner
+
+Registration fields:
+- Owner name.
+- Email.
+- Phone number.
+- Password.
+- CNIC information.
+- Address.
+- Vehicle ownership details.
+
+Vehicle owners can register and manage their vehicles after verification.
+
+## 2.5 Admin
+
+Create a separate secure admin login.
+
+Admin permissions:
+- Manage all user accounts.
+- Verify guides.
+- Verify hotel owners.
+- Verify vehicle owners.
+- Approve or reject listings.
+- Manage destinations.
+- Manage bookings.
+- Manage complaints.
+- Manage reviews.
+- Monitor platform activity.
+- Manage website content.
+
+Implement secure role-based access control.
+
+---
+
+# 3. TOUR GUIDE MODULE
+
+Build a complete tour guide marketplace.
+
+## 3.1 Verified Tour Guide System
+
+This is one of the most important features of TravelMate.
+
+Every tour guide must complete identity verification.
+
+Required verification information:
+
+- CNIC number.
+- CNIC front image.
+- CNIC back image.
+- Legal full name.
+- Contact number.
+- Address.
+- Profile photograph.
+- Tourism experience.
+- Optional tourism certificates.
+
+Verification process:
+
+1. Guide creates an account.
+2. Guide completes their profile.
+3. Guide submits CNIC information and documents.
+4. Application status becomes Pending Verification.
+5. Admin checks the submitted information.
+6. Admin approves or rejects the application.
+7. Approved guides receive a Verified badge.
+8. Only verified guides can publish packages and accept paid booking requests.
+
+Provide these verification statuses:
+
+- Not Submitted.
+- Pending.
+- Under Review.
+- Verified.
+- Rejected.
+- Resubmission Required.
+
+IMPORTANT:
+CNIC documents and numbers must never be displayed publicly. Protect identity documents with secure private storage and authorized admin access.
+
+## 3.2 Guide Profile
+
+Every guide must have a public profile containing:
+
+- Profile picture.
+- Name.
+- Verified badge.
+- About section.
+- Experience.
+- Languages.
+- Specialization.
+- Available destinations.
+- Contact options.
+- Previous tour videos.
+- Customer reviews.
+- Ratings.
+- Tour packages.
+- Starting prices.
+- Availability calendar.
+- Completed tours.
+
+## 3.3 Previous Tour Videos
+
+Allow guides to upload videos of their previous tours.
+
+Video information:
+- Video title.
+- Description.
+- Destination.
+- Tour date.
+- Video file or video URL.
+
+Display videos on the guide profile.
+
+Tourists should be able to watch these videos before selecting a guide.
+
+Allow verified customers to submit video testimonials or written reviews after completed tours.
+
+## 3.4 Guide Package Management
+
+Guides can create and publish their own packages.
+
+Package fields:
+
+- Package title.
+- Destination.
+- Package images.
+- Description.
+- Number of days.
+- Number of nights.
+- Price per person.
+- Total group price, if applicable.
+- Minimum travellers.
+- Maximum travellers.
+- Included services.
+- Excluded services.
+- Accommodation details.
+- Transport details.
+- Daily itinerary.
+- Available dates.
+- Cancellation policy.
+
+Guide dashboard functionality:
+
+- Create package.
+- Edit package.
+- Delete package.
+- Publish/unpublish package.
+- View package bookings.
+- View booking requests.
+- View customer reviews.
+
+Only verified guides can publish packages.
+
+## 3.5 Custom Tourist Travel Plan Requests
+
+Tourists must be able to create personalized travel plans and send them to any selected guide.
+
+Travel plan form:
+
+- Trip title.
+- Starting location.
+- Destination.
+- Multiple destinations.
+- Departure date.
+- Return date.
+- Number of travellers.
+- Total budget.
+- Preferred transport.
+- Hotel requirements.
+- Activities.
+- Special instructions.
+
+Example:
+
+A tourist wants to travel from Islamabad to Hunza and Skardu for 7 days with 4 family members.
+
+The tourist creates the plan and sends it to selected guides.
+
+Guide request management:
+
+Guides receive requests in their dashboard.
+
+They can:
+
+- Accept a request.
+- Reject a request.
+- Send a custom quotation.
+- Suggest another itinerary.
+- Suggest a different price.
+- Ask the tourist for additional information.
+- Message the tourist.
+
+Request statuses:
+
+- Pending.
+- Viewed.
+- Quotation Sent.
+- Accepted.
+- Rejected.
+- Cancelled.
+- Booking Requested.
+- Completed.
+
+Tourists can compare quotations from different guides and select the one they prefer.
+
+## 3.6 Guide Dashboard
+
+Create a professional dashboard containing:
+
+- Overview.
+- Profile.
+- Verification status.
+- My Packages.
+- Add New Package.
+- Travel Plan Requests.
+- Custom Quotations.
+- Booking Requests.
+- Upcoming Tours.
+- Completed Tours.
+- Availability Calendar.
+- Messages.
+- Notifications.
+- Reviews.
+- Earnings Information.
+- Account Settings.
+
+Since online payments are disabled, earnings should be informational only. Do not display fake transactions or payouts.
+
+---
+
+# 4. TOURIST / TRAVELLER MODULE
+
+## 4.1 Tourist Dashboard
+
+Create a user-friendly dashboard with:
+
+- Welcome section.
+- Profile information.
+- My Travel Plans.
+- My Guide Bookings.
+- My Hotel Bookings.
+- My Vehicle Bookings.
+- Saved Guides.
+- Saved Destinations.
+- Messages.
+- Notifications.
+- Reviews.
+- Account Settings.
+
+## 4.2 Explore Destinations
+
+Focus on Pakistani tourism.
+
+Include destinations such as:
+
+- Hunza Valley.
+- Skardu.
+- Fairy Meadows.
+- Naltar Valley.
+- Attabad Lake.
+- Shangrila Resort.
+- Deosai National Park.
+- Khunjerab Pass.
+- Naran.
+- Kaghan.
+- Swat.
+- Murree.
+
+Each destination should have:
+
+- Destination name.
+- Description.
+- Images.
+- Location.
+- Map.
+- Best time to visit.
+- Estimated budget.
+- Nearby hotels.
+- Available tour guides.
+- Related tour packages.
+
+Allow searching and filtering by destination category.
+
+## 4.3 Tour Guide Discovery
+
+Tourists can:
+
+- Browse all verified guides.
+- Search by location.
+- Filter by budget.
+- Filter by rating.
+- Filter by language.
+- Filter by experience.
+- View previous tour videos.
+- View reviews.
+- View guide packages.
+- View availability.
+- Contact guides.
+- Send custom trip requests.
+
+## 4.4 Custom Trip Planner
+
+Create an interactive trip planner.
+
+Tourists can:
+
+- Select starting location.
+- Select multiple destinations.
+- Choose travel dates.
+- Add travellers.
+- Set their budget.
+- Add daily activities.
+- Select hotel requirements.
+- Select transport requirements.
+- Save the trip.
+- Edit the trip.
+- Delete the trip.
+- Send the trip to selected guides.
+
+Calculate estimated trip expenses using available package and listing prices.
+
+Clearly indicate that estimated prices are not final quotations.
+
+## 4.5 Independent Travel
+
+Tourists must be able to book hotels and rent vehicles without hiring guides.
+
+Do not make guide booking mandatory.
+
+Allow independent:
+- Hotel reservations.
+- Vehicle rentals.
+- Destination exploration.
+- Trip planning.
+
+---
+
+# 5. HOTEL REGISTRATION AND BOOKING MODULE
+
+Create a complete hotel marketplace.
+
+## 5.1 Hotel Owner Registration
+
+Hotel owners can:
+
+- Register.
+- Login.
+- Create an owner profile.
+- Submit CNIC information.
+- Submit hotel ownership or business documents.
+- Wait for admin verification.
+
+## 5.2 Hotel Management
+
+Approved hotel owners can:
+
+- Register hotels.
+- Add hotel names.
+- Add hotel locations.
+- Upload images.
+- Write descriptions.
+- Add facilities.
+- Add room types.
+- Set prices per night.
+- Set available rooms.
+- Set check-in/check-out times.
+- Add cancellation policies.
+- Update room availability.
+
+Room types:
+
+- Single.
+- Double.
+- Deluxe.
+- Family.
+- Suite.
+
+## 5.3 Hotel Search
+
+Tourists can search by:
+
+- Destination.
+- Check-in date.
+- Check-out date.
+- Number of guests.
+- Room type.
+- Price range.
+- Facilities.
+- Ratings.
+
+## 5.4 Hotel Booking
+
+Booking process:
+
+1. Tourist searches for hotels.
+2. Selects a hotel.
+3. Views available rooms.
+4. Selects room type.
+5. Selects check-in and check-out dates.
+6. Enters guest information.
+7. Views booking cost.
+8. Submits booking request.
+9. Hotel owner accepts or rejects the request.
+10. Tourist receives booking confirmation or rejection.
+
+Show online payment as disabled.
+
+Display a Coming Soon message when the payment option is clicked.
+
+The booking request must still be saved in the database.
+
+Prevent double bookings using server-side availability checks.
+
+## 5.5 Hotel Owner Dashboard
+
+Include:
+
+- Overview.
+- My Hotels.
+- Add Hotel.
+- Room Management.
+- Reservations.
+- Pending Requests.
+- Confirmed Bookings.
+- Cancelled Bookings.
+- Availability Calendar.
+- Customer Reviews.
+- Profile Settings.
+
+---
+
+# 6. CAR RENTAL / VEHICLE BOOKING MODULE
+
+This is a particularly important module because TravelMate targets tourism in Gilgit-Baltistan, where tourists frequently rent vehicles for different destinations.
+
+Create a dedicated vehicle rental marketplace.
+
+## 6.1 Vehicle Owner Registration
+
+Vehicle owners can register their cars and other vehicles.
+
+Require:
+
+- Owner name.
+- Contact number.
+- CNIC information.
+- Vehicle ownership information.
+- Vehicle registration document.
+- Vehicle photographs.
+
+Admin must approve vehicle owners and listings before they become publicly available.
+
+## 6.2 Supported Vehicles
+
+Allow owners to register:
+
+- Cars.
+- Jeeps.
+- SUVs.
+- 4x4 vehicles.
+- Vans.
+- Coasters.
+- Hiace.
+- Other suitable tourism vehicles.
+
+Give special attention to vehicles commonly rented in Gilgit-Baltistan.
+
+## 6.3 Vehicle Listing Details
+
+Each vehicle listing should contain:
+
+- Vehicle name.
+- Brand.
+- Model.
+- Model year.
+- Vehicle category.
+- Number of seats.
+- Vehicle images.
+- Fuel type.
+- Transmission.
+- AC availability.
+- Vehicle condition.
+- Pickup location.
+- Service areas.
+- Rental price.
+- Price per day.
+- Driver availability.
+- Vehicle documents.
+- Availability calendar.
+- Rental conditions.
+
+## 6.4 Driver Optional Feature
+
+This feature is essential.
+
+When a tourist rents a vehicle, they must have two options:
+
+OPTION 1: With Driver
+
+- Tourist selects a vehicle with a driver.
+- Owner provides a driver.
+- Driver charges can be included in the daily rental price or shown separately.
+- Display driver availability.
+- Show driver-related terms.
+
+OPTION 2: Without Driver
+
+- Tourist rents the vehicle without a driver.
+- Tourist is responsible for driving.
+- Only approved vehicles and eligible renters can use this option.
+- Clearly display license and rental eligibility requirements.
+
+The vehicle owner must be able to specify whether their vehicle supports:
+
+- With Driver Only.
+- Without Driver Only.
+- Both Options.
+
+Do not assume that every vehicle is available for self-drive.
+
+## 6.5 Rental Duration System
+
+Allow tourists to rent vehicles for a selected number of days.
+
+Example:
+
+A tourist wants to rent a Jeep in Skardu for 5 days.
+
+The tourist selects:
+
+- Pickup location: Skardu.
+- Pickup date.
+- Return date.
+- Duration: 5 days.
+- Vehicle: 4x4 Jeep.
+- Driver: With Driver / Without Driver.
+
+Automatically calculate the rental estimate.
+
+Example:
+
+Daily rental price = PKR 12,000.
+
+Duration = 5 days.
+
+Estimated total = PKR 60,000.
+
+If driver charges, fuel, additional kilometres, or other fees are separate, show them clearly.
+
+The displayed amount must be an estimate until the owner confirms the request.
+
+## 6.6 Vehicle Search and Filters
+
+Tourists can search by:
+
+- City.
+- Pickup location.
+- Destination.
+- Pickup date.
+- Return date.
+- Number of rental days.
+- Vehicle category.
+- Number of seats.
+- Daily budget.
+- With driver.
+- Without driver.
+- Availability.
+
+## 6.7 Vehicle Booking Workflow
+
+1. Tourist opens the car rental section.
+2. Searches vehicles by location and dates.
+3. Selects a vehicle.
+4. Views images and details.
+5. Selects rental duration.
+6. Selects driver preference.
+7. Selects pickup location.
+8. Views estimated rental price.
+9. Submits booking request.
+10. Vehicle owner receives a notification.
+11. Owner accepts or rejects the request.
+12. Tourist receives the response.
+13. Booking status is updated.
+
+Booking statuses:
+
+- Pending.
+- Accepted.
+- Rejected.
+- Confirmed.
+- Active Rental.
+- Completed.
+- Cancelled.
+
+Since online payments are disabled, no online payment is required to submit a request.
+
+Include a separate payment button only as a disabled Coming Soon feature.
+
+## 6.8 Vehicle Owner Dashboard
+
+Include:
+
+- Dashboard Overview.
+- My Vehicles.
+- Add New Vehicle.
+- Vehicle Verification.
+- Edit Listings.
+- Availability Calendar.
+- Booking Requests.
+- Accepted Bookings.
+- Active Rentals.
+- Completed Rentals.
+- Customer Reviews.
+- Profile Settings.
+
+---
+
+# 7. ONLINE PAYMENT SYSTEM – DISABLED FOR CURRENT VERSION
+
+IMPORTANT: DO NOT IMPLEMENT ONLINE PAYMENT PROCESSING IN THIS VERSION.
+
+Online payments are planned for a future update.
+
+However, design the application so payment functionality can be integrated later without rebuilding the booking system.
+
+Payment interface requirements:
+
+Display a payment section on relevant booking pages.
+
+Include:
+- Online Payment.
+- Payment Method.
+- Pay Now.
+
+But make the payment option disabled.
+
+When a user clicks the disabled payment option or payment button, show this message:
+
+"Online Payments Coming Soon!"
+
+Subtitle:
+
+"We are working on secure online payment options. This feature will be available in a future TravelMate update."
+
+Button:
+"Got it"
+
+Do not:
+- Collect card details.
+- Ask for bank account passwords.
+- Redirect to payment gateways.
+- Generate fake transaction IDs.
+- Mark bookings as paid.
+- Display fake provider earnings.
+- Claim that a transaction was successful.
+
+Important database design:
+
+Prepare the system for future payment integration by including optional payment-related booking fields and a payment module structure.
+
+For the current version, payment status should be:
+
+- Not Required Yet.
+- Coming Soon.
+
+Booking status and payment status must be separate.
+
+Booking requests must function completely without online payments.
+
+---
+
+# 8. MESSAGING AND NOTIFICATION SYSTEM
+
+Build a communication system between tourists and service providers.
+
+Supported conversations:
+
+- Tourist ↔ Tour Guide.
+- Tourist ↔ Hotel Owner.
+- Tourist ↔ Vehicle Owner.
+
+Features:
+
+- Real-time or near-real-time messaging.
+- Text messages.
+- Message timestamps.
+- Conversation history.
+- Booking-related messages.
+- Notifications for new messages.
+- Booking request notifications.
+- Acceptance and rejection notifications.
+- Quotation notifications.
+
+Use Socket.IO or another suitable real-time messaging solution.
+
+---
+
+# 9. REVIEWS AND RATINGS
+
+Create a review system for:
+
+- Tour Guides.
+- Hotels.
+- Vehicles and rental providers.
+
+Features:
+
+- 1–5 star ratings.
+- Written reviews.
+- Optional images.
+- Review dates.
+- Average ratings.
+- Provider replies.
+
+Only users with eligible completed bookings should be allowed to submit reviews.
+
+---
+
+# 10. ADMIN PANEL
+
+Build a complete admin dashboard.
+
+Admin sections:
+
+### Dashboard
+- Total users.
+- Total tourists.
+- Total guides.
+- Verified guides.
+- Pending verification requests.
+- Total hotels.
+- Total vehicles.
+- Total bookings.
+- Active bookings.
+- Completed bookings.
+
+### Guide Management
+- View guide profiles.
+- Review CNIC documents.
+- Approve/reject verification.
+- Manage guide packages.
+- Manage guide accounts.
+
+### Hotel Management
+- Review hotel applications.
+- Approve/reject hotels.
+- Manage hotel listings.
+- View reservations.
+
+### Vehicle Management
+- Review vehicle owners.
+- Review vehicle documents.
+- Approve/reject vehicles.
+- Manage vehicle listings.
+- View rental bookings.
+
+### Tourist Management
+- View users.
+- Manage accounts.
+- Suspend accounts.
+
+### Booking Management
+- View all booking types.
+- Filter bookings.
+- View booking details.
+- Manage cancellations.
+- Handle complaints.
+
+### Content Management
+- Manage destinations.
+- Manage homepage content.
+- Manage categories.
+- Manage featured packages.
+- Manage reviews.
+
+### Payment Settings
+- Display online payment status as Coming Soon.
+- Keep payment integration disabled.
+- Provide a future integration-ready structure.
+
+---
+
+# 11. WEBSITE PAGES AND SCREEN STRUCTURE
+
+Create the following pages in a logical navigation sequence.
+
+## Public Website
+
+1. Home Page.
+2. Explore Destinations.
+3. Destination Details.
+4. Tour Guides.
+5. Tour Guide Profile.
+6. Tour Packages.
+7. Tour Package Details.
+8. Custom Trip Planner.
+9. Search Results.
+10. Hotels.
+11. Hotel Details.
+12. Hotel Booking.
+13. Car Rental.
+14. Vehicle Details.
+15. Vehicle Booking.
+16. About Us.
+17. Contact Us.
+18. Login.
+19. Signup.
+20. Forgot Password.
+21. Terms and Conditions.
+22. Privacy Policy.
+23. Cancellation Policy.
+
+## Tourist Dashboard
+
+1. Dashboard Overview.
+2. My Travel Plans.
+3. Create Travel Plan.
+4. My Guide Requests.
+5. My Bookings.
+6. My Hotel Reservations.
+7. My Vehicle Rentals.
+8. Saved Guides.
+9. Saved Destinations.
+10. Messages.
+11. Notifications.
+12. Reviews.
+13. Profile Settings.
+
+## Tour Guide Dashboard
+
+1. Dashboard Overview.
+2. My Profile.
+3. Verification.
+4. Previous Tour Videos.
+5. My Packages.
+6. Create Package.
+7. Travel Plan Requests.
+8. Custom Quotations.
+9. Booking Management.
+10. Availability Calendar.
+11. Messages.
+12. Reviews.
+13. Settings.
+
+## Hotel Owner Dashboard
+
+1. Dashboard Overview.
+2. My Hotels.
+3. Add Hotel.
+4. Room Management.
+5. Reservations.
+6. Availability.
+7. Reviews.
+8. Settings.
+
+## Vehicle Owner Dashboard
+
+1. Dashboard Overview.
+2. My Vehicles.
+3. Add Vehicle.
+4. Vehicle Verification.
+5. Availability Calendar.
+6. Booking Requests.
+7. Active Rentals.
+8. Completed Rentals.
+9. Reviews.
+10. Settings.
+
+## Admin Dashboard
+
+1. Overview.
+2. User Management.
+3. Guide Verification.
+4. Hotel Verification.
+5. Vehicle Verification.
+6. Destination Management.
+7. Package Management.
+8. Booking Management.
+9. Reviews Management.
+10. Complaints.
+11. Website Settings.
+
+---
+
+# 12. HOMEPAGE UI/UX DESIGN
+
+Design a premium travel website inspired by modern platforms such as Airbnb, Booking.com, and GetYourGuide.
+
+Use:
+
+- Clean layouts.
+- Premium photography.
+- Modern typography.
+- White and light backgrounds.
+- Deep forest green primary color.
+- Warm orange or golden accents.
+- Rounded cards.
+- Smooth animations.
+- Responsive navigation.
+- Professional icons.
+
+Homepage sections:
+
+1. Navbar with TravelMate logo.
+2. Hero section featuring beautiful Pakistan landscapes.
+3. Main search bar with service categories.
+4. Popular Destinations.
+5. Verified Tour Guides.
+6. Popular Tour Packages.
+7. Plan Your Own Trip.
+8. Discover Hotels.
+9. Rent a Vehicle.
+10. Why Choose TravelMate.
+11. How It Works.
+12. Customer Reviews.
+13. Become a TravelMate Partner.
+14. Newsletter.
+15. Footer.
+
+Navbar should include:
+
+- Home.
+- Destinations.
+- Tour Guides.
+- Packages.
+- Hotels.
+- Car Rental.
+- About.
+- Login.
+- Sign Up.
+
+Add clear calls to action:
+- Plan Your Trip.
+- Find a Guide.
+- Explore Hotels.
+- Rent a Vehicle.
+- Become a Partner.
+
+---
+
+# 13. TECHNICAL STACK
+
+Use the following technologies:
+
+Frontend:
+- Next.js.
+- React.
+- TypeScript.
+- Tailwind CSS.
+- Shadcn UI.
+- Lucide Icons.
+
+Backend:
+- Next.js API routes or Node.js with Express.
+- TypeScript.
+- REST APIs.
+- Role-based authentication and authorization.
+
+Database:
+- PostgreSQL.
+- Prisma ORM.
+
+Additional tools:
+- Cloudinary for images and videos.
+- Google Maps API for locations.
+- Socket.IO for messaging.
+- Email service for account verification.
+- Zod for validation.
+- React Hook Form for forms.
+
+Use compatible, stable versions of all libraries.
+
+---
+
+# 14. DATABASE STRUCTURE
+
+Design a normalized relational database.
+
+Required models:
+
+- User.
+- UserProfile.
+- GuideProfile.
+- GuideVerification.
+- GuideVideo.
+- GuidePackage.
+- PackageItinerary.
+- Destination.
+- TravelPlan.
+- TravelPlanDestination.
+- GuideRequest.
+- GuideQuotation.
+- Hotel.
+- HotelRoom.
+- HotelBooking.
+- Vehicle.
+- VehicleDocument.
+- VehicleBooking.
+- Conversation.
+- Message.
+- Notification.
+- Review.
+- Booking.
+- PaymentPlaceholder.
+- AdminLog.
+
+Include proper:
+- Primary keys.
+- Foreign keys.
+- Relationships.
+- Unique constraints.
+- Indexes.
+- Validation.
+- Timestamps.
+
+The payment placeholder should not process or record actual online transactions.
+
+---
+
+# 15. SECURITY REQUIREMENTS
+
+Implement:
+
+- Secure password hashing.
+- Authentication sessions.
+- Role-based access control.
+- Server-side form validation.
+- Protected APIs.
+- Secure file uploads.
+- Private CNIC document storage.
+- Input sanitization.
+- Rate limiting.
+- Secure environment variables.
+- Booking availability validation.
+- Duplicate booking prevention.
+- Admin audit logs.
+
+Never expose private documents or sensitive user information.
+
+---
+
+# 16. FUNCTIONAL REQUIREMENTS
+
+Every major feature must work.
+
+Do not create a static demo.
+
+All registration forms must save data to the database.
+
+All dashboards must display real database information.
+
+All listings must support create, read, update, and delete operations according to user permissions.
+
+All booking forms must submit actual booking requests.
+
+All guide requests must reach selected guides.
+
+All guides must be able to accept, reject, and send quotations.
+
+Hotel owners must receive hotel booking requests.
+
+Vehicle owners must receive rental booking requests.
+
+The rental duration and estimated price calculation must work.
+
+Driver selection must work.
+
+Online payment must remain disabled and display Coming Soon.
+
+Include loading states, error messages, success messages, and empty states.
+
+---
+
+# 17. DEVELOPMENT PHASES
+
+Develop the application step by step.
+
+Phase 1: Project setup and folder structure.
+
+Phase 2: Database and authentication.
+
+Phase 3: Role-based dashboards.
+
+Phase 4: Guide registration and verification.
+
+Phase 5: Guide packages and custom trip requests.
+
+Phase 6: Tourist dashboard and trip planner.
+
+Phase 7: Hotel registration and booking.
+
+Phase 8: Vehicle rental and driver options.
+
+Phase 9: Messaging and notifications.
+
+Phase 10: Reviews and ratings.
+
+Phase 11: Admin dashboard.
+
+Phase 12: Payment Coming Soon interface.
+
+Phase 13: Testing, optimization, and deployment.
+
+After each phase, test the features before proceeding.
+
+---
+
+# 18. FINAL DEVELOPMENT INSTRUCTIONS
+
+- Build TravelMate as a complete full-stack website.
+- Use clean and reusable components.
+- Maintain a professional folder structure.
+- Write readable and maintainable code.
+- Make all pages responsive.
+- Use real database operations.
+- Avoid unnecessary hardcoded data.
+- Add realistic seed data for testing.
+- Do not create fake payment functionality.
+- Do not leave buttons non-functional.
+- Do not skip backend implementation.
+- Provide complete installation instructions.
+- Provide environment variable examples.
+- Provide database migration and seed instructions.
+- Explain how to run the project locally.
+- Test all user roles and booking workflows.
+
+Start by generating:
+
+1. Complete system architecture.
+2. Project folder structure.
+3. Database schema.
+4. Authentication architecture.
+5. Homepage design.
+6. Phase 1 implementation.
+
+Then proceed phase by phase, providing complete working code for every file.
+
+FINAL GOAL:
+
+Deliver a fully functional TravelMate platform that connects tourists, verified tour guides, hotel owners, and vehicle rental owners in one ecosystem.
+
+Tourists should be able to plan trips, hire guides, book hotels independently, and rent vehicles for a selected number of days with optional drivers.
+
+Service providers should manage their listings, receive booking requests, and communicate with tourists.
+
+Online payments must remain disabled until a future version, with a professional Coming Soon message displayed whenever users click the payment option.

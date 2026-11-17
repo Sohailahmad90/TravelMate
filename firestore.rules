@@ -1,0 +1,865 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'shahsohailahmad001@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isBoundedString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || arr[0] is string);
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'fullName', 'role', 'isSuspended', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'uid', 'email', 'fullName', 'phone', 'role', 'avatarUrl', 'city',
+          'isSuspended', 'savedDestinationIds', 'savedGuideIds', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && isBoundedString(data.email, 3, 160)
+        && isBoundedString(data.fullName, 2, 100)
+        && data.role in ['tourist', 'guide', 'hotel_owner', 'vehicle_owner', 'admin']
+        && data.isSuspended is bool
+        && (!('phone' in data) || isBoundedString(data.phone, 0, 32))
+        && (!('avatarUrl' in data) || isBoundedString(data.avatarUrl, 0, 120000))
+        && (!('city' in data) || isBoundedString(data.city, 0, 80))
+        && (!('savedDestinationIds' in data) || isStringList(data.savedDestinationIds, 50))
+        && (!('savedGuideIds' in data) || isStringList(data.savedGuideIds, 50))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDestination(data) {
+      return data.keys().hasAll(['id', 'name', 'region', 'description', 'imageUrl', 'bestTimeToVisit', 'estimatedBudgetPkr', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'name', 'region', 'province', 'tagline', 'description', 'imageUrl',
+          'bestTimeToVisit', 'estimatedBudgetPkr', 'elevationMeters', 'latitude', 'longitude',
+          'highlights', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isBoundedString(data.name, 2, 120)
+        && data.region in ['Gilgit-Baltistan', 'Swat & Kaghan', 'High Passes', 'Lakes & Meadows']
+        && isBoundedString(data.description, 5, 2000)
+        && isBoundedString(data.imageUrl, 1, 500)
+        && isBoundedString(data.bestTimeToVisit, 2, 120)
+        && data.estimatedBudgetPkr is number && data.estimatedBudgetPkr >= 0
+        && (!('province' in data) || isBoundedString(data.province, 0, 80))
+        && (!('tagline' in data) || isBoundedString(data.tagline, 0, 180))
+        && (!('elevationMeters' in data) || data.elevationMeters is number)
+        && (!('latitude' in data) || data.latitude is number)
+        && (!('longitude' in data) || data.longitude is number)
+        && (!('highlights' in data) || isStringList(data.highlights, 12))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGuideProfile(data) {
+      return data.keys().hasAll(['guideId', 'ownerUid', 'displayName', 'bio', 'experienceYears', 'startingPricePkr', 'verificationStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'guideId', 'ownerUid', 'displayName', 'avatarUrl', 'bio', 'experienceYears',
+          'languages', 'specializations', 'availableDestinations', 'startingPricePkr',
+          'verificationStatus', 'ratingAvg', 'reviewCount', 'completedToursCount',
+          'availabilityStatus', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.guideId)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.displayName, 2, 100)
+        && isBoundedString(data.bio, 5, 1500)
+        && data.experienceYears is number && data.experienceYears >= 0 && data.experienceYears <= 70
+        && data.startingPricePkr is number && data.startingPricePkr >= 0
+        && data.verificationStatus in ['not_submitted', 'pending', 'under_review', 'verified', 'rejected', 'resubmission_required']
+        && (!('avatarUrl' in data) || isBoundedString(data.avatarUrl, 0, 120000))
+        && (!('languages' in data) || isStringList(data.languages, 12))
+        && (!('specializations' in data) || isStringList(data.specializations, 12))
+        && (!('availableDestinations' in data) || isStringList(data.availableDestinations, 20))
+        && (!('ratingAvg' in data) || data.ratingAvg is number)
+        && (!('reviewCount' in data) || data.reviewCount is number)
+        && (!('completedToursCount' in data) || data.completedToursCount is number)
+        && (!('availabilityStatus' in data) || isBoundedString(data.availabilityStatus, 0, 60))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGuideVerification(data) {
+      return data.keys().hasAll(['guideId', 'ownerUid', 'legalFullName', 'cnicNumber', 'contactNumber', 'address', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'guideId', 'ownerUid', 'legalFullName', 'cnicNumber', 'contactNumber', 'address',
+          'cnicFrontReference', 'cnicBackReference', 'certificateTitle', 'status',
+          'adminRemarks', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.guideId)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.legalFullName, 2, 120)
+        && isBoundedString(data.cnicNumber, 5, 25)
+        && isBoundedString(data.contactNumber, 7, 30)
+        && isBoundedString(data.address, 4, 300)
+        && data.status in ['not_submitted', 'pending', 'under_review', 'verified', 'rejected', 'resubmission_required']
+        && (!('cnicFrontReference' in data) || isBoundedString(data.cnicFrontReference, 0, 300))
+        && (!('cnicBackReference' in data) || isBoundedString(data.cnicBackReference, 0, 300))
+        && (!('certificateTitle' in data) || isBoundedString(data.certificateTitle, 0, 160))
+        && (!('adminRemarks' in data) || isBoundedString(data.adminRemarks, 0, 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGuideVideo(data) {
+      return data.keys().hasAll(['id', 'guideId', 'ownerUid', 'title', 'destination', 'tourDate', 'videoUrl', 'createdAt'])
+        && data.keys().hasOnly(['id', 'guideId', 'ownerUid', 'title', 'description', 'destination', 'tourDate', 'videoUrl', 'thumbnailUrl', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.guideId)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.title, 2, 140)
+        && isBoundedString(data.destination, 2, 100)
+        && isBoundedString(data.tourDate, 2, 40)
+        && isBoundedString(data.videoUrl, 4, 500)
+        && (!('description' in data) || isBoundedString(data.description, 0, 800))
+        && (!('thumbnailUrl' in data) || isBoundedString(data.thumbnailUrl, 0, 500))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidGuidePackage(data) {
+      return data.keys().hasAll(['id', 'guideId', 'ownerUid', 'guideName', 'title', 'destination', 'days', 'nights', 'pricePerPersonPkr', 'isPublished', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'guideId', 'ownerUid', 'guideName', 'title', 'destination', 'imageUrl',
+          'description', 'days', 'nights', 'pricePerPersonPkr', 'groupPricePkr',
+          'minTravelers', 'maxTravelers', 'includedServices', 'excludedServices',
+          'accommodationSummary', 'transportSummary', 'dailyItinerary',
+          'availableDates', 'cancellationPolicy', 'isPublished', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.guideId)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.guideName, 2, 100)
+        && isBoundedString(data.title, 3, 140)
+        && isBoundedString(data.destination, 2, 120)
+        && data.days is number && data.days >= 1 && data.days <= 60
+        && data.nights is number && data.nights >= 0 && data.nights <= 60
+        && data.pricePerPersonPkr is number && data.pricePerPersonPkr >= 0
+        && data.isPublished is bool
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 0, 500))
+        && (!('description' in data) || isBoundedString(data.description, 0, 2000))
+        && (!('groupPricePkr' in data) || data.groupPricePkr is number)
+        && (!('minTravelers' in data) || data.minTravelers is number)
+        && (!('maxTravelers' in data) || data.maxTravelers is number)
+        && (!('includedServices' in data) || isStringList(data.includedServices, 20))
+        && (!('excludedServices' in data) || isStringList(data.excludedServices, 20))
+        && (!('accommodationSummary' in data) || isBoundedString(data.accommodationSummary, 0, 400))
+        && (!('transportSummary' in data) || isBoundedString(data.transportSummary, 0, 400))
+        && (!('dailyItinerary' in data) || isStringList(data.dailyItinerary, 30))
+        && (!('availableDates' in data) || isBoundedString(data.availableDates, 0, 200))
+        && (!('cancellationPolicy' in data) || isBoundedString(data.cancellationPolicy, 0, 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTravelPlan(data) {
+      return data.keys().hasAll(['id', 'touristUid', 'touristName', 'title', 'startingLocation', 'destinations', 'departureDate', 'returnDate', 'travelersCount', 'budgetPkr', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'touristUid', 'touristName', 'title', 'startingLocation', 'destinations',
+          'departureDate', 'returnDate', 'travelersCount', 'budgetPkr', 'preferredTransport',
+          'hotelRequirement', 'activities', 'specialInstructions', 'estimatedCostPkr',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.touristUid)
+        && isBoundedString(data.touristName, 2, 100)
+        && isBoundedString(data.title, 3, 140)
+        && isBoundedString(data.startingLocation, 2, 100)
+        && isStringList(data.destinations, 15) && data.destinations.size() >= 1
+        && isBoundedString(data.departureDate, 4, 40)
+        && isBoundedString(data.returnDate, 4, 40)
+        && data.travelersCount is number && data.travelersCount >= 1 && data.travelersCount <= 50
+        && data.budgetPkr is number && data.budgetPkr >= 0
+        && data.status in ['draft', 'sent', 'quoted', 'booked', 'completed', 'cancelled']
+        && (!('preferredTransport' in data) || isBoundedString(data.preferredTransport, 0, 120))
+        && (!('hotelRequirement' in data) || isBoundedString(data.hotelRequirement, 0, 120))
+        && (!('activities' in data) || isStringList(data.activities, 20))
+        && (!('specialInstructions' in data) || isBoundedString(data.specialInstructions, 0, 1000))
+        && (!('estimatedCostPkr' in data) || data.estimatedCostPkr is number)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGuideRequest(data) {
+      return data.keys().hasAll(['id', 'touristUid', 'touristName', 'guideId', 'guideOwnerUid', 'guideName', 'tripTitle', 'destinations', 'departureDate', 'returnDate', 'travelersCount', 'budgetPkr', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'planId', 'touristUid', 'touristName', 'guideId', 'guideOwnerUid', 'guideName',
+          'tripTitle', 'startingLocation', 'destinations', 'departureDate', 'returnDate',
+          'travelersCount', 'budgetPkr', 'preferredTransport', 'hotelRequirement', 'notes',
+          'status', 'quotedPricePkr', 'proposedItinerary', 'guideMessage', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.touristUid)
+        && isValidId(data.guideId)
+        && isValidId(data.guideOwnerUid)
+        && isBoundedString(data.touristName, 2, 100)
+        && isBoundedString(data.guideName, 2, 100)
+        && isBoundedString(data.tripTitle, 2, 140)
+        && isStringList(data.destinations, 15) && data.destinations.size() >= 1
+        && isBoundedString(data.departureDate, 4, 40)
+        && isBoundedString(data.returnDate, 4, 40)
+        && data.travelersCount is number && data.travelersCount >= 1
+        && data.budgetPkr is number && data.budgetPkr >= 0
+        && data.status in ['pending', 'viewed', 'quotation_sent', 'accepted', 'rejected', 'cancelled', 'booking_requested', 'completed']
+        && (!('planId' in data) || isBoundedString(data.planId, 0, 128))
+        && (!('startingLocation' in data) || isBoundedString(data.startingLocation, 0, 100))
+        && (!('preferredTransport' in data) || isBoundedString(data.preferredTransport, 0, 120))
+        && (!('hotelRequirement' in data) || isBoundedString(data.hotelRequirement, 0, 120))
+        && (!('notes' in data) || isBoundedString(data.notes, 0, 1000))
+        && (!('quotedPricePkr' in data) || data.quotedPricePkr is number)
+        && (!('proposedItinerary' in data) || isBoundedString(data.proposedItinerary, 0, 2000))
+        && (!('guideMessage' in data) || isBoundedString(data.guideMessage, 0, 1000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidHotel(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'ownerName', 'name', 'destination', 'address', 'startingPricePkr', 'verificationStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'ownerName', 'name', 'destination', 'address', 'description',
+          'imageUrl', 'facilities', 'checkInTime', 'checkOutTime', 'cancellationPolicy',
+          'rooms', 'startingPricePkr', 'verificationStatus', 'ratingAvg', 'reviewCount',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.ownerName, 2, 100)
+        && isBoundedString(data.name, 2, 140)
+        && isBoundedString(data.destination, 2, 120)
+        && isBoundedString(data.address, 2, 250)
+        && data.startingPricePkr is number && data.startingPricePkr >= 0
+        && data.verificationStatus in ['pending', 'verified', 'rejected']
+        && (!('description' in data) || isBoundedString(data.description, 0, 1500))
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 0, 500))
+        && (!('facilities' in data) || isStringList(data.facilities, 20))
+        && (!('checkInTime' in data) || isBoundedString(data.checkInTime, 0, 40))
+        && (!('checkOutTime' in data) || isBoundedString(data.checkOutTime, 0, 40))
+        && (!('cancellationPolicy' in data) || isBoundedString(data.cancellationPolicy, 0, 500))
+        && (!('rooms' in data) || (data.rooms is list && data.rooms.size() <= 10))
+        && (!('ratingAvg' in data) || data.ratingAvg is number)
+        && (!('reviewCount' in data) || data.reviewCount is number)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'ownerName', 'name', 'category', 'seats', 'pickupLocation', 'pricePerDayPkr', 'driverOption', 'verificationStatus', 'availableForBooking', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'ownerName', 'name', 'brand', 'model', 'modelYear', 'category',
+          'seats', 'imageUrl', 'fuelType', 'transmission', 'acAvailable', 'condition',
+          'pickupLocation', 'serviceAreas', 'pricePerDayPkr', 'driverOption', 'driverFeePerDayPkr',
+          'selfDriveEligibility', 'rentalTerms', 'verificationStatus', 'availableForBooking',
+          'ratingAvg', 'reviewCount', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isBoundedString(data.ownerName, 2, 100)
+        && isBoundedString(data.name, 2, 140)
+        && data.category in ['4x4 Jeep', 'SUV', 'Car', 'Hiace Van', 'Coaster']
+        && data.seats is number && data.seats >= 1 && data.seats <= 60
+        && isBoundedString(data.pickupLocation, 2, 120)
+        && data.pricePerDayPkr is number && data.pricePerDayPkr >= 0
+        && data.driverOption in ['with_driver_only', 'without_driver_only', 'both']
+        && data.verificationStatus in ['pending', 'verified', 'rejected']
+        && data.availableForBooking is bool
+        && (!('brand' in data) || isBoundedString(data.brand, 0, 80))
+        && (!('model' in data) || isBoundedString(data.model, 0, 80))
+        && (!('modelYear' in data) || data.modelYear is number)
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 0, 500))
+        && (!('fuelType' in data) || isBoundedString(data.fuelType, 0, 40))
+        && (!('transmission' in data) || isBoundedString(data.transmission, 0, 40))
+        && (!('acAvailable' in data) || data.acAvailable is bool)
+        && (!('condition' in data) || isBoundedString(data.condition, 0, 60))
+        && (!('serviceAreas' in data) || isStringList(data.serviceAreas, 20))
+        && (!('driverFeePerDayPkr' in data) || data.driverFeePerDayPkr is number)
+        && (!('selfDriveEligibility' in data) || isBoundedString(data.selfDriveEligibility, 0, 300))
+        && (!('rentalTerms' in data) || isBoundedString(data.rentalTerms, 0, 600))
+        && (!('ratingAvg' in data) || data.ratingAvg is number)
+        && (!('reviewCount' in data) || data.reviewCount is number)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['id', 'bookingType', 'touristUid', 'touristName', 'providerUid', 'providerName', 'listingId', 'listingTitle', 'startDate', 'endDate', 'daysCount', 'estimatedTotalPkr', 'bookingStatus', 'paymentStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'bookingType', 'touristUid', 'touristName', 'providerUid', 'providerName',
+          'listingId', 'listingTitle', 'destination', 'startDate', 'endDate', 'daysCount',
+          'guestsCount', 'roomType', 'driverSelected', 'pickupLocation', 'estimatedTotalPkr',
+          'notes', 'bookingStatus', 'paymentStatus', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.bookingType in ['package', 'guide_custom', 'hotel', 'vehicle']
+        && isValidId(data.touristUid)
+        && isBoundedString(data.touristName, 2, 100)
+        && isValidId(data.providerUid)
+        && isBoundedString(data.providerName, 2, 100)
+        && isValidId(data.listingId)
+        && isBoundedString(data.listingTitle, 2, 160)
+        && isBoundedString(data.startDate, 4, 40)
+        && isBoundedString(data.endDate, 4, 40)
+        && data.daysCount is number && data.daysCount >= 1 && data.daysCount <= 90
+        && data.estimatedTotalPkr is number && data.estimatedTotalPkr >= 0
+        && data.bookingStatus in ['pending', 'accepted', 'rejected', 'confirmed', 'active', 'completed', 'cancelled']
+        && data.paymentStatus in ['not_required_yet', 'coming_soon']
+        && (!('destination' in data) || isBoundedString(data.destination, 0, 120))
+        && (!('guestsCount' in data) || data.guestsCount is number)
+        && (!('roomType' in data) || isBoundedString(data.roomType, 0, 60))
+        && (!('driverSelected' in data) || data.driverSelected is bool)
+        && (!('pickupLocation' in data) || isBoundedString(data.pickupLocation, 0, 120))
+        && (!('notes' in data) || isBoundedString(data.notes, 0, 800))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'conversationKey', 'senderUid', 'senderName', 'recipientUid', 'recipientName', 'text', 'participants', 'createdAt'])
+        && data.keys().hasOnly([
+          'id', 'conversationKey', 'senderUid', 'senderName', 'recipientUid', 'recipientName',
+          'relatedListingTitle', 'text', 'participants', 'createdAt'
+        ])
+        && isValidId(data.id)
+        && isBoundedString(data.conversationKey, 3, 180)
+        && isValidId(data.senderUid)
+        && isBoundedString(data.senderName, 2, 100)
+        && isValidId(data.recipientUid)
+        && isBoundedString(data.recipientName, 2, 100)
+        && isBoundedString(data.text, 1, 1500)
+        && data.participants is list && data.participants.size() == 2
+        && data.participants[0] is string && data.participants[1] is string
+        && (!('relatedListingTitle' in data) || isBoundedString(data.relatedListingTitle, 0, 140))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'recipientUid', 'title', 'body', 'type', 'isRead', 'createdAt'])
+        && data.keys().hasOnly(['id', 'recipientUid', 'title', 'body', 'type', 'isRead', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.recipientUid)
+        && isBoundedString(data.title, 1, 140)
+        && isBoundedString(data.body, 1, 500)
+        && data.type in ['booking', 'quotation', 'verification', 'message', 'system']
+        && data.isRead is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'targetType', 'targetId', 'providerUid', 'bookingId', 'authorUid', 'authorName', 'rating', 'comment', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'id', 'targetType', 'targetId', 'targetName', 'providerUid', 'bookingId', 'authorUid', 'authorName',
+          'rating', 'comment', 'providerReply', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.targetType in ['guide', 'hotel', 'vehicle']
+        && isValidId(data.targetId)
+        && isValidId(data.providerUid)
+        && isValidId(data.bookingId)
+        && isValidId(data.authorUid)
+        && isBoundedString(data.authorName, 2, 100)
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && isBoundedString(data.comment, 3, 1000)
+        && (!('targetName' in data) || isBoundedString(data.targetName, 0, 140))
+        && (!('providerReply' in data) || isBoundedString(data.providerReply, 0, 800))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Security Matchers
+
+    // Admins Registry
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Users (PII Protected)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().uid == userId
+        && (isAdmin() || incoming().role in ['tourist', 'guide', 'hotel_owner', 'vehicle_owner'])
+        && incoming().isSuspended == false
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedUser()
+        && isValidUser(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().role in ['tourist', 'guide', 'hotel_owner', 'vehicle_owner']
+            && incoming().isSuspended == existing().isSuspended
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'fullName', 'email', 'phone', 'role', 'avatarUrl', 'city',
+              'savedDestinationIds', 'savedGuideIds', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Destinations (Public Catalog)
+    match /destinations/{destId} {
+      allow get: if isValidId(destId);
+      allow list: if true;
+      allow create: if isValidId(destId) && isAdmin() && isValidDestination(incoming())
+        && incoming().id == destId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(destId) && isAdmin() && isValidDestination(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(destId) && isAdmin();
+    }
+
+    // Tour Guides (Public Profile, Private Verification)
+    match /guides/{guideId} {
+      allow get: if isValidId(guideId);
+      allow list: if true;
+      allow create: if isValidId(guideId)
+        && isVerifiedUser()
+        && isValidGuideProfile(incoming())
+        && incoming().guideId == guideId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            incoming().ownerUid == request.auth.uid
+            && incoming().verificationStatus in ['not_submitted', 'pending']
+          )
+        );
+      allow update: if isValidId(guideId)
+        && isVerifiedUser()
+        && isValidGuideProfile(incoming())
+        && incoming().guideId == existing().guideId
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().verificationStatus in ['not_submitted', 'pending', existing().verificationStatus]
+            && (incoming().verificationStatus != 'verified' || existing().verificationStatus == 'verified')
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'displayName', 'avatarUrl', 'bio', 'experienceYears',
+              'languages', 'specializations', 'availableDestinations',
+              'startingPricePkr', 'availabilityStatus', 'verificationStatus', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(guideId) && isAdmin();
+    }
+
+    // Guide CNIC & Identity Verification (Strictly Private PII)
+    match /guideVerifications/{guideId} {
+      allow get: if isValidId(guideId) && (
+        isAdmin() ||
+        (isSignedIn() && (guideId == request.auth.uid || (resource != null && existing().ownerUid == request.auth.uid)))
+      );
+      allow list: if isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid);
+      allow create: if isValidId(guideId)
+        && isVerifiedUser()
+        && isValidGuideVerification(incoming())
+        && incoming().guideId == guideId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(guideId)
+        && isVerifiedUser()
+        && isValidGuideVerification(incoming())
+        && incoming().guideId == existing().guideId
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().status == 'pending'
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'legalFullName', 'cnicNumber', 'contactNumber', 'address',
+              'cnicFrontReference', 'cnicBackReference', 'certificateTitle',
+              'status', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(guideId) && isAdmin();
+    }
+
+    // Previous Tour Videos
+    match /guideVideos/{videoId} {
+      allow get: if isValidId(videoId);
+      allow list: if true;
+      allow create: if isValidId(videoId)
+        && isVerifiedUser()
+        && isValidGuideVideo(incoming())
+        && incoming().id == videoId
+        && (isAdmin() || incoming().ownerUid == request.auth.uid)
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(videoId)
+        && isVerifiedUser()
+        && isValidGuideVideo(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && (isAdmin() || existing().ownerUid == request.auth.uid);
+      allow delete: if isValidId(videoId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+    }
+
+    // Guide Packages (Guides can create, edit, and publish their own packages)
+    match /packages/{packageId} {
+      allow get: if isValidId(packageId);
+      allow list: if true;
+      allow create: if isValidId(packageId)
+        && isVerifiedUser()
+        && isValidGuidePackage(incoming())
+        && incoming().id == packageId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            incoming().ownerUid == request.auth.uid
+            && incoming().guideId == request.auth.uid
+          )
+        );
+      allow update: if isValidId(packageId)
+        && isVerifiedUser()
+        && isValidGuidePackage(incoming())
+        && incoming().id == existing().id
+        && incoming().guideId == existing().guideId
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'guideName', 'title', 'destination', 'imageUrl', 'description', 'days', 'nights',
+              'pricePerPersonPkr', 'groupPricePkr', 'minTravelers', 'maxTravelers',
+              'includedServices', 'excludedServices', 'accommodationSummary',
+              'transportSummary', 'dailyItinerary', 'availableDates',
+              'cancellationPolicy', 'isPublished', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(packageId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+    }
+
+    // Personal Custom Travel Plans
+    match /travelPlans/{planId} {
+      allow get: if isValidId(planId) && (isAdmin() || (isSignedIn() && resource != null && existing().touristUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && existing().touristUid == request.auth.uid);
+      allow create: if isValidId(planId)
+        && isVerifiedUser()
+        && isValidTravelPlan(incoming())
+        && incoming().id == planId
+        && incoming().touristUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(planId)
+        && isVerifiedUser()
+        && isValidTravelPlan(incoming())
+        && incoming().id == existing().id
+        && incoming().touristUid == existing().touristUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().touristUid == request.auth.uid
+            && existing().status != 'completed'
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'startingLocation', 'destinations', 'departureDate', 'returnDate',
+              'travelersCount', 'budgetPkr', 'preferredTransport', 'hotelRequirement',
+              'activities', 'specialInstructions', 'estimatedCostPkr', 'status', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(planId) && (isAdmin() || (isVerifiedUser() && existing().touristUid == request.auth.uid));
+    }
+
+    // Guide Custom Trip Requests & Quotations
+    match /guideRequests/{requestId} {
+      allow get: if isValidId(requestId) && (
+        isAdmin() || (isSignedIn() && resource != null && (existing().touristUid == request.auth.uid || existing().guideOwnerUid == request.auth.uid))
+      );
+      allow list: if isAdmin() || (
+        isSignedIn() && (existing().touristUid == request.auth.uid || existing().guideOwnerUid == request.auth.uid)
+      );
+      allow create: if isValidId(requestId)
+        && isVerifiedUser()
+        && isValidGuideRequest(incoming())
+        && incoming().id == requestId
+        && incoming().touristUid == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(requestId)
+        && isVerifiedUser()
+        && isValidGuideRequest(incoming())
+        && incoming().id == existing().id
+        && incoming().touristUid == existing().touristUid
+        && incoming().guideId == existing().guideId
+        && incoming().guideOwnerUid == existing().guideOwnerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().status != 'completed' &&
+            existing().guideOwnerUid == request.auth.uid &&
+            incoming().status in ['viewed', 'accepted', 'quotation_sent', 'rejected', 'completed'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'status', 'quotedPricePkr', 'proposedItinerary', 'guideMessage', 'updatedAt'
+            ])
+          ) ||
+          (
+            existing().status != 'completed' &&
+            existing().touristUid == request.auth.uid &&
+            incoming().status in ['accepted', 'rejected', 'cancelled', 'booking_requested'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(requestId) && isAdmin();
+    }
+
+    // Hotels
+    match /hotels/{hotelId} {
+      allow get: if isValidId(hotelId);
+      allow list: if true;
+      allow create: if isValidId(hotelId)
+        && isVerifiedUser()
+        && isValidHotel(incoming())
+        && incoming().id == hotelId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().verificationStatus == 'pending'));
+      allow update: if isValidId(hotelId)
+        && isVerifiedUser()
+        && isValidHotel(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().verificationStatus == existing().verificationStatus
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'destination', 'address', 'description', 'imageUrl',
+              'facilities', 'checkInTime', 'checkOutTime', 'cancellationPolicy',
+              'rooms', 'startingPricePkr', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(hotelId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+    }
+
+    // Vehicles
+    match /vehicles/{vehicleId} {
+      allow get: if isValidId(vehicleId);
+      allow list: if true;
+      allow create: if isValidId(vehicleId)
+        && isVerifiedUser()
+        && isValidVehicle(incoming())
+        && incoming().id == vehicleId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().verificationStatus == 'pending'));
+      allow update: if isValidId(vehicleId)
+        && isVerifiedUser()
+        && isValidVehicle(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().verificationStatus == existing().verificationStatus
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'brand', 'model', 'modelYear', 'category', 'seats', 'imageUrl',
+              'fuelType', 'transmission', 'acAvailable', 'condition', 'pickupLocation',
+              'serviceAreas', 'pricePerDayPkr', 'driverOption', 'driverFeePerDayPkr',
+              'selfDriveEligibility', 'rentalTerms', 'availableForBooking', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(vehicleId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+    }
+
+    // Bookings (Unified)
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId) && (
+        isAdmin() || (isSignedIn() && resource != null && (existing().touristUid == request.auth.uid || existing().providerUid == request.auth.uid))
+      );
+      allow list: if isAdmin() || (
+        isSignedIn() && (existing().touristUid == request.auth.uid || existing().providerUid == request.auth.uid)
+      );
+      allow create: if isValidId(bookingId)
+        && isVerifiedUser()
+        && isValidBooking(incoming())
+        && incoming().id == bookingId
+        && incoming().touristUid == request.auth.uid
+        && incoming().bookingStatus == 'pending'
+        && incoming().paymentStatus in ['not_required_yet', 'coming_soon']
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(bookingId)
+        && isVerifiedUser()
+        && isValidBooking(incoming())
+        && incoming().id == existing().id
+        && incoming().touristUid == existing().touristUid
+        && incoming().providerUid == existing().providerUid
+        && incoming().listingId == existing().listingId
+        && incoming().bookingType == existing().bookingType
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            !(existing().bookingStatus in ['completed', 'cancelled']) &&
+            existing().providerUid == request.auth.uid &&
+            incoming().bookingStatus in ['accepted', 'rejected', 'confirmed', 'active', 'completed'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['bookingStatus', 'updatedAt'])
+          ) ||
+          (
+            !(existing().bookingStatus in ['completed', 'cancelled']) &&
+            existing().touristUid == request.auth.uid &&
+            incoming().bookingStatus == 'cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['bookingStatus', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(bookingId) && isAdmin();
+    }
+
+    // Real-Time Messages
+    match /messages/{messageId} {
+      allow get: if isValidId(messageId) && (isAdmin() || (isSignedIn() && resource != null && request.auth.uid in existing().participants));
+      allow list: if isAdmin() || (isSignedIn() && request.auth.uid in existing().participants);
+      allow create: if isValidId(messageId)
+        && isVerifiedUser()
+        && isValidMessage(incoming())
+        && incoming().id == messageId
+        && incoming().senderUid == request.auth.uid
+        && request.auth.uid in incoming().participants
+        && incoming().createdAt == request.time;
+      allow update, delete: if isValidId(messageId) && isAdmin();
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (isAdmin() || (isSignedIn() && resource != null && existing().recipientUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && existing().recipientUid == request.auth.uid);
+      allow create: if isValidId(notificationId)
+        && isVerifiedUser()
+        && isValidNotification(incoming())
+        && incoming().id == notificationId
+        && incoming().isRead == false
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(notificationId)
+        && isVerifiedUser()
+        && isValidNotification(incoming())
+        && incoming().id == existing().id
+        && incoming().recipientUid == existing().recipientUid
+        && incoming().createdAt == existing().createdAt
+        && (isAdmin() || (existing().recipientUid == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['isRead'])));
+      allow delete: if isValidId(notificationId) && (isAdmin() || (isVerifiedUser() && existing().recipientUid == request.auth.uid));
+    }
+
+    // Verified Reviews
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId);
+      allow list: if true;
+      allow create: if isValidId(reviewId)
+        && isVerifiedUser()
+        && isValidReview(incoming())
+        && incoming().id == reviewId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            incoming().authorUid == request.auth.uid
+            && exists(/databases/$(database)/documents/bookings/$(incoming().bookingId))
+            && get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.touristUid == request.auth.uid
+            && get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.providerUid == incoming().providerUid
+            && get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.bookingStatus == 'completed'
+          )
+        );
+      allow update: if isValidId(reviewId)
+        && isVerifiedUser()
+        && isValidReview(incoming())
+        && incoming().id == existing().id
+        && incoming().bookingId == existing().bookingId
+        && incoming().authorUid == existing().authorUid
+        && incoming().providerUid == existing().providerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().providerUid == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['providerReply', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(reviewId) && isAdmin();
+    }
+  }
+}
